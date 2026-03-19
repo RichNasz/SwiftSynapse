@@ -41,6 +41,11 @@ Podfile.lock
 timeline.xctimeline
 playground.xcworkspace
 
+# Claude Code artifacts (allow only CLAUDE.md and skills)
+.claude/
+!.claude/skills/
+!CLAUDE.md
+
 # Environment / secrets
 .env
 .env.local
