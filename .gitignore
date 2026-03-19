@@ -1,0 +1,49 @@
+# Xcode
+*.xcuserstate
+*.xcbkptlist
+xcuserdata/
+*.xccheckout
+*.moved-aside
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+.swiftpm/
+*.resolved
+
+# CocoaPods (not used, but guard against accidental addition)
+Pods/
+Podfile.lock
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Xcode project user data
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+
+# Playground output
+timeline.xctimeline
+playground.xcworkspace
+
+# Environment / secrets
+.env
+.env.local
+*.pem
+*.key
+Secrets.swift
