@@ -41,6 +41,11 @@ Podfile.lock
 timeline.xctimeline
 playground.xcworkspace
 
+# Cursor IDE artifacts
+.cursor/
+.cursorignore
+.cursorindexingignore
+
 # Claude Code artifacts (allow only CLAUDE.md and skills)
 .claude/
 !.claude/skills/
