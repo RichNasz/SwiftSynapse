@@ -1,51 +1,39 @@
-# SwiftSynapse — Vision
+# SwiftSynapse Project Vision
 
-> A showcase repository for autonomous, observable, background-capable AI agents built in pure Swift.
+## Overview
+SwiftSynapse is an open-source showcase and framework for building smart, autonomous AI agents natively in Swift for Apple platforms (iOS 18+, macOS 15+, visionOS).  
+Agents are observable, background-capable, type-safe, and powered by declarative macros — enabling seamless integration into SwiftUI apps with minimal boilerplate.
 
----
+## Core Goals
+- Demonstrate production-grade agentic patterns using pure Swift (no Python bridges, no heavy frameworks).
+- Provide runnable examples of agents (code review, performance optimization, task planning, etc.) built via spec-driven development.
+- Lower the barrier for Swift developers to adopt agentic AI in their apps (on-device first via Foundation Models, hybrid cloud fallback).
+- Showcase the full power of SwiftSynapseMacros + SwiftResponsesDSL + SwiftLLMToolMacros.
 
-## What Is SwiftSynapse?
+## Key Principles & Non-Negotiables
+- AI-first, AI-always code generation: All implementation code, README, docs, and examples are generated from specifications via Claude Code (or equivalent). No human hand-written implementation code is permitted.
+- Strict spec separation: Human/AI-refined specs live in VISION.md, CodeGenSpecs/, and per-agent folders. Generated artifacts (Sources/, README.md, etc.) are never manually edited.
+- Type safety & compile-time guarantees: Heavy use of macros for tools, structured output, observability.
+- Modern Swift: Swift 6.2+, actors, Observation (@Observable), strict concurrency, result builders.
+- Apple-native: Foundation Models on-device priority, SwiftUI for interfaces, BGContinuedProcessingTask for background continuation.
+- Zero extra runtime dependencies beyond Foundation (and existing DSL/macro libs).
 
-SwiftSynapse demonstrates how to build production-quality AI agents entirely in Swift — with zero external AI framework dependencies — using Apple's first-party technologies and a small set of focused macro libraries.
+## Target Use Cases in Showcase
+- PRReviewer: Analyzes GitHub PRs for style/performance/security, suggests patches.
+- PerformanceOptimizer: Identifies bottlenecks in Swift code, proposes optimizations.
+- TaskPlanner: Multi-phase personal productivity agent with sub-agents.
+- (more to come)
 
-Every agent in this repository is generated from a machine-readable specification. No implementation code is written by hand. The spec drives the code; the code is never edited directly.
+## Success Criteria
+- Clone → open Xcode → run AgentDashboard → see live agent reasoning, tool calls, and UI updates.
+- All agents observable via transcript (thoughts, steps, tool results).
+- Background execution support (foreground start → continue in background).
+- Easy to add new agents via copy-template + spec + generate.
 
----
+## Branding
+Name: SwiftSynapse  
+Tagline: "Smart, autonomous agents in pure Swift – connected intelligence for Apple platforms"
+Web: swiftsynapse.dev (or similar – to be registered)
+Note: Not affiliated with unrelated sites like swiftsynapse.com.
 
-## Goals
-
-- Demonstrate end-to-end AI agent patterns in idiomatic Swift 6.2+
-- Showcase autonomous background agents that survive app suspension
-- Provide a reusable template and spec-driven workflow for new agents
-- Serve as a living reference for the SwiftSynapseMacros, SwiftResponsesDSL, and SwiftLLMToolMacros libraries
-
----
-
-## Target Platforms
-
-| Platform   | Minimum Version |
-|------------|----------------|
-| iOS        | 18.0+          |
-| macOS      | 15.0+          |
-| visionOS   | 2.0+           |
-
----
-
-## Core Principles
-
-1. **Type-safety first.** All agent inputs, outputs, and tool calls are statically typed. No stringly-typed APIs.
-2. **Zero extra dependencies.** Only Apple frameworks, plus the SwiftSynapse macro libraries. No Python bridges, no third-party AI SDKs.
-3. **AI-first generation.** All implementation code is generated from specifications by an AI. Human authors write specs, not code.
-4. **Observable agents.** Every agent exposes its state, transcript, and progress through the `Observation` framework (`@Observable`). SwiftUI views bind directly to agent state.
-5. **Background-capable.** Agents can continue processing when the app moves to the background, using Swift concurrency (`async`/`await`, `Task`, `AsyncStream`) and `BGContinuedProcessingTask`.
-6. **Foundation Models compatible.** All LLM integrations are designed to work with Apple's on-device Foundation Models framework as well as remote providers.
-
----
-
-## Non-Negotiables
-
-- **No hand-written implementation code.** All `.swift` files are generated artifacts. The authoritative source of truth is always the spec.
-- **Swift 6.2+.** The codebase uses strict concurrency checking and modern Swift features throughout.
-- **Observation framework.** Agent state is exposed via `@Observable`, never `ObservableObject` / Combine.
-- **Foundation Models compatible.** Agent tool schemas and prompt structures must remain compatible with Apple's Foundation Models APIs.
-- **Spec-first.** Any change to behavior begins with a change to the relevant `SPEC.md` or `CodeGenSpecs/` file. Never the reverse.
+Last updated: March 2026
