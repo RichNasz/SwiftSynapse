@@ -56,5 +56,26 @@ let package = Package(
             dependencies: ["LLMChatAgent"],
             path: "Agents/LLMChat/Tests"
         ),
+        .target(
+            name: "LLMChatPersonasAgent",
+            dependencies: [
+                .product(name: "SwiftSynapseMacrosClient", package: "SwiftSynapseMacros"),
+                .product(name: "SwiftOpenResponsesDSL", package: "SwiftOpenResponsesDSL"),
+            ],
+            path: "Agents/LLMChatPersonas/Sources"
+        ),
+        .executableTarget(
+            name: "llm-chat-personas",
+            dependencies: [
+                "LLMChatPersonasAgent",
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ],
+            path: "Agents/LLMChatPersonas/CLI"
+        ),
+        .testTarget(
+            name: "LLMChatPersonasTests",
+            dependencies: ["LLMChatPersonasAgent"],
+            path: "Agents/LLMChatPersonas/Tests"
+        ),
     ]
 )
