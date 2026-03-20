@@ -61,9 +61,16 @@ open Package.swift
 **3. Run an agent from the CLI**
 
 ```bash
+# Plain LLM reply
 swift run llm-chat "What is the capital of France?" \
     --server-url http://127.0.0.1:1234/v1/responses \
     --model llama3
+
+# Persona-rewritten reply (prints original + persona version)
+swift run llm-chat-personas "Explain black holes." \
+    --server-url http://127.0.0.1:1234/v1/responses \
+    --model llama3 \
+    --persona pirate
 ```
 
 **4. Or invoke an agent in code**
@@ -125,6 +132,7 @@ SwiftSynapse ships runnable agents today, with larger showcase agents in progres
 |---|---|---|
 | [SimpleEcho](./Agents/SimpleEcho/specs/SPEC.md) | Echoes a goal string back with a prefix — the minimal `@SpecDrivenAgent` reference | `@SpecDrivenAgent` macro, transcript, status lifecycle |
 | [LLMChat](./Agents/LLMChat/specs/SPEC.md) | Forwards a prompt to any Open Responses API-compatible endpoint and returns the reply | `LLMClient`, `ResponseRequest` DSL, `RequestTimeout`, error handling |
+| [LLMChatPersonas](./Agents/LLMChatPersonas/specs/SPEC.md) | Two-step pipeline: plain LLM response followed by an optional persona rewrite using conversation threading | Two-call pipeline, `PreviousResponseId` threading, dual CLI output |
 
 ### Showcase agents (in progress)
 

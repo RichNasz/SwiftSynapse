@@ -1,4 +1,4 @@
-<!-- Generated from CodeGenSpecs/Agent-README-Generation.md + Agents/SimpleEcho/SPEC.md — Do not edit manually. -->
+<!-- Generated from CodeGenSpecs/README-Generation.md + Agents/SimpleEcho/specs/SPEC.md — Do not edit manually. -->
 
 # SimpleEcho
 
@@ -47,21 +47,22 @@ struct EchoView: View {
 
 | Field | Type | Description |
 |-------|------|-------------|
-| goal | String | The user-provided text to echo back |
+| `goal` | `String` | The user-provided text to echo back |
 
 ## Output
 
 | Field | Type | Description |
 |-------|------|-------------|
-| transcript | [TranscriptEntry] | Updated with user + assistant entries |
+| return value | `String` | `"Echo from SwiftSynapse: \(goal)"` |
+| `transcript` | `[TranscriptEntry]` | Updated with user + assistant entries |
 
 ## How It Works
 
 1. **Validate input** — Check that `goal` is non-empty; throw `SimpleEchoError.emptyGoal` and set status to `.failed` if empty.
 2. **Start running** — Set status to `.running`.
-3. **Record user input** — Append a `.user` transcript entry with the goal text.
+3. **Record user input** — Append a `.userMessage(goal)` transcript entry.
 4. **Produce echo** — Build the echoed string: `"Echo from SwiftSynapse: \(goal)"`.
-5. **Record output** — Append an `.assistant` transcript entry with the echoed string.
+5. **Record output** — Append an `.assistantMessage` transcript entry with the echoed string.
 6. **Complete** — Set status to `.completed`.
 
 ## Transcript Example
@@ -71,6 +72,12 @@ struct EchoView: View {
 [assistant] Echo from SwiftSynapse: Hello, SwiftSynapse!
 ```
 
+## Errors
+
+| Case | Thrown when |
+|------|-------------|
+| `SimpleEchoError.emptyGoal` | `goal` is an empty string |
+
 ## Testing
 
 ```bash
@@ -79,8 +86,8 @@ swift test --filter SimpleEchoTests
 
 Tests validate:
 - Transcript has exactly 2 entries after a successful run
-- First entry is `.user` with content matching the goal
-- Second entry is `.assistant` with content matching `"Echo from SwiftSynapse: \(goal)"`
+- First entry is `.userMessage` with content matching the goal
+- Second entry is `.assistantMessage` with content matching `"Echo from SwiftSynapse: \(goal)"`
 - Status is `.completed` after success, `.failed` after empty input
 - Completes without throwing for any non-empty input
 
@@ -94,10 +101,10 @@ Tests validate:
 
 ```
 Agents/SimpleEcho/
-├── SPEC.md
-├── README.md
-├── CodeGen/
+├── specs/
+│   ├── SPEC.md
 │   └── Overview.md
+├── README.md
 ├── Sources/
 │   └── SimpleEcho.swift
 ├── CLI/
@@ -108,6 +115,6 @@ Agents/SimpleEcho/
 
 ## Related
 
-- [SPEC.md](SPEC.md) — agent specification
-- [CodeGen/Overview.md](CodeGen/Overview.md) — generation rules
+- [specs/SPEC.md](specs/SPEC.md) — agent specification
+- [specs/Overview.md](specs/Overview.md) — generation rules
 - [Root README.md](../../README.md) — project overview
