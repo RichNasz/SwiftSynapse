@@ -6,7 +6,7 @@
 
 ## Purpose
 
-This `CodeGen/` directory holds agent-specific generation specs that supplement the shared rules in `CodeGenSpecs/`. The generator reads both sets of specs and merges them when producing the `Generated/` output.
+This `specs/` directory holds agent-specific generation specs that supplement the shared rules in `CodeGenSpecs/`. The generator reads both sets of specs and merges them when producing the `Generated/` output.
 
 ---
 
@@ -20,6 +20,7 @@ The generator will produce the following Swift files for this agent:
 | `[AgentName]+Tools.swift` | `@LLMTool`-annotated tool functions |
 | `[AgentName]+Background.swift` | `BGContinuedProcessingTask` integration |
 | `[AgentName]+Transcript.swift` | Agent-specific transcript extensions (if any) |
+| `README.md` | Auto-generated agent documentation |
 
 ---
 
