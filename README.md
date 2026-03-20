@@ -6,7 +6,7 @@
 
 [![Swift](https://img.shields.io/badge/Swift-6.2%2B-F05138?style=flat-square&logo=swift&logoColor=white)](https://swift.org)
 [![Platforms](https://img.shields.io/badge/Platforms-iOS%2026%2B%20%7C%20macOS%2026%2B%20%7C%20visionOS%202.4%2B-0078D4?style=flat-square&logo=apple&logoColor=white)](#)
-[![License](https://img.shields.io/badge/License-MIT-brightgreen?style=flat-square)](#license)
+[![License](https://img.shields.io/badge/License-MIT-brightgreen?style=flat-square)](#license--links)
 
 ```
   ◉ — ◉ — ◉
@@ -24,9 +24,9 @@
 
 SwiftSynapse is an open-source showcase and framework for building smart, autonomous AI agents natively in Swift — with no Python bridges, no heavy external runtimes, and no compromises on type safety or platform integration. Every agent we ship is **observable**, **background-capable**, and **macro-powered**: reasoning steps, tool calls, and streaming output surface directly in SwiftUI with zero Combine plumbing.
 
-We built SwiftSynapse on three focused libraries — **SwiftSynapseMacros**, **SwiftOpenResponsesDSL**, and **SwiftLLMToolMacros** — that handle observability wiring, structured LLM output, and compile-time tool schemas respectively. Agents stay lean because the macro layer absorbs the boilerplate. On devices that support it (iOS 26+, macOS 26+), agents run on-device first via Apple's **Foundation Models** framework; a `LLMClient` protocol provides transparent fallback to OpenAI-compatible cloud endpoints.
+We built SwiftSynapse on three focused libraries — **SwiftSynapseMacros**, **SwiftOpenResponsesDSL**, and **SwiftLLMToolMacros** — that handle agent scaffolding, structured LLM communication, and compile-time tool schemas respectively. Agents stay lean because the macro layer absorbs the boilerplate. On devices that support it (iOS 26+, macOS 26+), agents run on-device first via Apple's **Foundation Models** framework; `LLMClient` provides transparent fallback to any OpenAI-compatible cloud endpoint.
 
-This project follows a strict **spec-driven development (SDD)** workflow: every `.swift` file is a generated artifact. Human authors write and refine Markdown specifications; Claude Code (or an equivalent AI agent) produces all implementation code from those specs. Generated files are never edited manually — to change behavior, you update the spec and regenerate. See [VISION.md](./VISION.md) for the full project vision and non-negotiables.
+This project follows a strict **spec-driven development (SDD)** workflow: every `.swift` file is a generated artifact. Human authors write and refine Markdown specifications; Claude Code (or an equivalent AI agent) produces all implementation code from those specs. Generated files are never edited manually — to change behavior, update the spec and regenerate. See [VISION.md](./VISION.md) for the full project vision and non-negotiables.
 
 ---
 
@@ -37,15 +37,13 @@ This project follows a strict **spec-driven development (SDD)** workflow: every 
 - **Background Execution** — agents register a `BGContinuedProcessingTask` and checkpoint progress, surviving app suspension cleanly
 - **Type-Safe Tools** — `@LLMTool` macros generate JSON schemas at compile time; no stringly-typed dispatch, no runtime schema errors
 - **On-Device Priority** — Apple Foundation Models framework used first on iOS 26+ / macOS 26+ / visionOS 2.4+ for full privacy
-- **Hybrid Cloud Fallback** — transparent fallback to any OpenAI-compatible endpoint via the `LLMClient` protocol when needed
-- **Pure Swift** — zero external runtimes, no Python bridges, no heavy AI SDKs; only Foundation and the SwiftSynapse macro libraries
-- **Apple-Native** — SwiftUI interfaces, `@MainActor`-safe agents, actors, strict Swift 6.2 concurrency throughout
+- **Hybrid Cloud Fallback** — transparent fallback to any OpenAI-compatible endpoint via `LLMClient` when needed
+- **Pure Swift** — zero external runtimes, no Python bridges, no heavy AI SDKs; only Foundation and the three SwiftSynapse libraries
+- **Apple-Native** — SwiftUI interfaces, `actor`-based agents, strict Swift 6.2 concurrency throughout
 
 ---
 
 ## 🚀 Quick Start
-
-> **Note:** The Swift package and AgentDashboard app are generated artifacts produced once the first agent spec is finalized. The steps below reflect the workflow once generation is complete.
 
 **1. Clone the repository**
 
@@ -60,73 +58,84 @@ cd SwiftSynapse
 open Package.swift
 ```
 
-**3. Select the AgentDashboard scheme and run**
+**3. Run an agent from the CLI**
 
-The dashboard displays all available agents with their live transcript, tool calls, status, and streaming output in real time.
-
-![Agent Dashboard running](Documentation/assets/dashboard-running.gif)
-
-**4. Invoke an agent programmatically**
-
-```swift
-import SwiftSynapseMacros
-import SwiftUI
-
-// 1. Instantiate — inject the LLM client (on-device or cloud)
-let agent = PRReviewerAgent(llmClient: FoundationModelsClient())
-
-// 2. Run — structured input, async/await, strict concurrency
-let output = try await agent.run(
-    input: PRReviewerInput(
-        repositoryURL: "https://github.com/owner/repo",
-        pullRequestNumber: 42
-    )
-)
-
-// 3. Observe — transcript updates in real time via @Observable
-print(output.summary)
+```bash
+swift run llm-chat "What is the capital of France?" \
+    --server-url http://127.0.0.1:1234/v1/responses \
+    --model llama3
 ```
 
-Bind the agent's live state to any SwiftUI view:
+**4. Or invoke an agent in code**
 
 ```swift
-struct PRReviewerView: View {
-    @State private var agent = PRReviewerAgent(llmClient: FoundationModelsClient())
+import SwiftSynapseMacrosClient
+
+// Instantiate — provide an Open Responses API endpoint
+let agent = try LLMChat(
+    serverURL: "http://127.0.0.1:1234/v1/responses",
+    modelName: "llama3"
+)
+
+// Run — async/await, strict concurrency
+let reply = try await agent.run(goal: "Summarize the Swift 6.2 release notes.")
+print(reply)
+
+// Observe — transcript and status are @Observable; bind directly in SwiftUI
+let transcript = await agent.transcript   // [TranscriptEntry]
+let status = await agent.status           // LLMChat.Status
+```
+
+Bind live agent state to any SwiftUI view:
+
+```swift
+struct ChatView: View {
+    @State private var agent = try! LLMChat(
+        serverURL: "http://127.0.0.1:1234/v1/responses",
+        modelName: "llama3"
+    )
+    @State private var goal = ""
 
     var body: some View {
         VStack {
-            TranscriptView(transcript: agent.transcript)
+            TranscriptView(entries: agent.transcript)
 
             if agent.isRunning {
-                ProgressView("Reviewing pull request…")
+                ProgressView("Thinking…")
             }
         }
         .task {
-            try? await agent.run(
-                input: PRReviewerInput(
-                    repositoryURL: "https://github.com/owner/repo",
-                    pullRequestNumber: 42
-                )
-            )
+            try? await agent.run(goal: goal)
         }
     }
 }
 ```
 
+![Agent Dashboard running](Documentation/assets/dashboard-running.gif)
+
 ---
 
 ## Agent Examples
 
-The agents below are the showcase examples that define SwiftSynapse's scope. Each is specified by a `SPEC.md` and fully generated — no hand-written implementation code.
+SwiftSynapse ships runnable agents today, with larger showcase agents in progress. Every agent is fully spec-driven — no hand-written implementation code.
+
+### Runnable now
 
 | Agent | Description | Key Patterns Demonstrated |
 |---|---|---|
-| [PRReviewer](./Agents/PRReviewer/SPEC.md) | Analyzes GitHub PRs for style, performance, and security issues; suggests concrete patches | Tool calling, structured patches, multi-phase review |
-| [PerformanceOptimizer](./Agents/PerformanceOptimizer/SPEC.md) | Identifies bottlenecks in Swift code and proposes targeted optimizations | Benchmark tools, code rewrite suggestions, structured output |
-| [TaskPlanner](./Agents/TaskPlanner/SPEC.md) | Multi-phase personal productivity agent that breaks goals into sub-tasks and tracks completion | Planning, verification, sub-agent orchestration, memory |
-| [ResearchAssistant](./Agents/ResearchAssistant/SPEC.md) | Long-running research agent with retrieval-augmented generation and session persistence | Memory, web tools, RAG, background continuation |
+| [SimpleEcho](./Agents/SimpleEcho/specs/SPEC.md) | Echoes a goal string back with a prefix — the minimal `@SpecDrivenAgent` reference | `@SpecDrivenAgent` macro, transcript, status lifecycle |
+| [LLMChat](./Agents/LLMChat/specs/SPEC.md) | Forwards a prompt to any Open Responses API-compatible endpoint and returns the reply | `LLMClient`, `ResponseRequest` DSL, `RequestTimeout`, error handling |
 
-> Agents are added incrementally. See [Agents/TemplateAgent/SPEC.md](./Agents/TemplateAgent/SPEC.md) for the scaffold used to bootstrap each one.
+### Showcase agents (in progress)
+
+| Agent | Description | Key Patterns Demonstrated |
+|---|---|---|
+| [PRReviewer](./Agents/PRReviewer/specs/SPEC.md) | Analyzes GitHub PRs for style, performance, and security issues; suggests concrete patches | Tool calling, structured patches, multi-phase review |
+| [PerformanceOptimizer](./Agents/PerformanceOptimizer/specs/SPEC.md) | Identifies bottlenecks in Swift code and proposes targeted optimizations | Benchmark tools, code rewrite suggestions, structured output |
+| [TaskPlanner](./Agents/TaskPlanner/specs/SPEC.md) | Multi-phase personal productivity agent that breaks goals into sub-tasks and tracks completion | Planning, verification, sub-agent orchestration, memory |
+| [ResearchAssistant](./Agents/ResearchAssistant/specs/SPEC.md) | Long-running research agent with retrieval-augmented generation and session persistence | Memory, web tools, RAG, background continuation |
+
+> New agents are bootstrapped from [Agents/TemplateAgent/specs/SPEC.md](./Agents/TemplateAgent/specs/SPEC.md). Copy it, fill in the spec, and run the generator.
 
 ![Transcript view showing live tool calls](Documentation/assets/transcript-view.gif)
 
@@ -159,7 +168,7 @@ SwiftSynapse is fully **AI-first**: no human writes implementation code. Every `
                      ▼
 ┌─────────────────────────────────────────────┐
 │  4. Commit spec + generated artifacts       │
-│     Never edit Generated/ files directly    │
+│     Never edit generated .swift files       │
 └─────────────────────────────────────────────┘
 ```
 
@@ -169,76 +178,84 @@ SwiftSynapse is fully **AI-first**: no human writes implementation code. Every `
 |---|---|---|
 | `VISION.md` | Project vision, goals, non-negotiables | Human |
 | `CodeGenSpecs/` | Shared generation rules for all agents | Human |
-| `Agents/<Name>/SPEC.md` | Per-agent goal, inputs, tasks, tools, outputs | Human |
-| `Agents/<Name>/CodeGen/` | Agent-specific generation guidance | Human |
-| `Agents/<Name>/Generated/` | Generated Swift implementation | AI (never edit) |
+| `Agents/<Name>/specs/SPEC.md` | Per-agent goal, inputs, tasks, tools, outputs | Human |
+| `Agents/<Name>/specs/Overview.md` | Agent-specific generation guidance | Human |
+| `Agents/<Name>/Sources/` | Generated Swift implementation | AI (never edit) |
 | `README.md` | This file | AI (never edit) |
 
 **Transparency:** every generated `.swift` file opens with a header comment referencing the spec it was produced from:
 
 ```swift
-// Generated from Agents/PRReviewer/SPEC.md
-// Do not edit manually. Update spec and re-generate.
+// Generated strictly from Agents/LLMChat/specs/Overview.md + shared CodeGenSpecs/
+// Do not edit manually — update the spec and re-generate
 ```
 
-See [`CodeGenSpecs/Overview.md`](./CodeGenSpecs/Overview.md) for the full shared generation rules that apply to every agent.
+See [`CodeGenSpecs/Overview.md`](./CodeGenSpecs/Overview.md) for the shared generation rules applied to every agent.
 
 ---
 
 ## Installation & Usage
 
-SwiftSynapse's generated agents depend on three macro libraries. Add them to your own Swift package:
+SwiftSynapse agents depend on three macro libraries. Add them to your own Swift package:
 
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/RichNasz/SwiftSynapseMacros", from: "0.1.0"),
-    .package(url: "https://github.com/RichNasz/SwiftOpenResponsesDSL",  from: "0.1.0"),
-    .package(url: "https://github.com/RichNasz/SwiftLLMToolMacros",  from: "0.1.0"),
+    .package(url: "https://github.com/RichNasz/SwiftSynapseMacros", branch: "main"),
+    .package(url: "https://github.com/RichNasz/SwiftOpenResponsesDSL", branch: "main"),
+    .package(url: "https://github.com/RichNasz/SwiftLLMToolMacros",   branch: "main"),
 ],
 targets: [
     .target(
-        name: "YourApp",
+        name: "YourAgent",
         dependencies: [
-            .product(name: "SwiftSynapseMacros", package: "SwiftSynapseMacros"),
-            .product(name: "SwiftOpenResponsesDSL",  package: "SwiftOpenResponsesDSL"),
-            .product(name: "SwiftLLMToolMacros", package: "SwiftLLMToolMacros"),
+            .product(name: "SwiftSynapseMacrosClient", package: "SwiftSynapseMacros"),
         ]
     )
 ]
 ```
 
-> **Platform requirement:** On-device Foundation Models inference requires **iOS 26+**, **macOS 26+**, or **visionOS 2.4+** with Apple Intelligence enabled. The `FoundationModelsClient` will throw `LLMClientError.unsupportedPlatform` on earlier OS versions — catch it and fall back to a `CloudLLMClient` targeting any OpenAI-compatible endpoint.
+> `SwiftSynapseMacrosClient` re-exports both `SwiftOpenResponsesDSL` and `SwiftLLMToolMacros`, so a single import is all most agent files need.
 
-### Minimal runtime example
+> **Platform requirement:** On-device Foundation Models inference requires **iOS 26+**, **macOS 26+**, or **visionOS 2.4+** with Apple Intelligence enabled. For broader compatibility, point `LLMClient` at any OpenAI-compatible cloud endpoint instead.
+
+### Minimal agent example
 
 ```swift
-import SwiftSynapseMacros
-import SwiftOpenResponsesDSL
+import SwiftSynapseMacrosClient
 
-@Observable
-@MainActor
-final class MyAgent {
-    private(set) var transcript = AgentTranscript()
-    private(set) var status: MyAgentStatus = .idle
-    var isRunning: Bool { status == .running }
+@SpecDrivenAgent
+public actor MyAgent {
+    private let modelName: String
+    private let _llmClient: LLMClient
 
-    private let llmClient: any LLMClient
-
-    init(llmClient: any LLMClient = FoundationModelsClient()) {
-        self.llmClient = llmClient
+    public init(serverURL: String, modelName: String, apiKey: String? = nil) throws {
+        self.modelName = modelName
+        self._llmClient = try LLMClient(baseURL: serverURL, apiKey: apiKey ?? "")
     }
 
-    func run(goal: String) async throws {
-        status = .running
-        defer { status = .idle }
+    public func run(goal: String) async throws -> String {
+        _status = .running
+        _transcript.append(.userMessage(goal))
 
-        for try await delta in llmClient.stream(prompt: goal) {
-            await transcript.apply(delta)
+        let request = try ResponseRequest(model: modelName) {
+            try RequestTimeout(300)
+            try ResourceTimeout(300)
+        } input: {
+            User(goal)
         }
+
+        let response = try await _llmClient.send(request)
+        let text = response.firstOutputText ?? ""
+
+        _transcript.append(.assistantMessage(text))
+        _status = .completed
+        return text
     }
 }
 ```
+
+The `@SpecDrivenAgent` macro generates `Status`, `_status`, `_transcript`, `status`, `isRunning`, `transcript`, and `client` — all the boilerplate an observable agent needs.
 
 ---
 
@@ -249,23 +266,25 @@ We welcome contributions — especially new agent specs, improvements to shared 
 ### Adding a new agent
 
 1. Copy `Agents/TemplateAgent/` → `Agents/<YourAgentName>/`
-2. Fill in `Agents/<YourAgentName>/SPEC.md`:
+2. Fill in `Agents/<YourAgentName>/specs/SPEC.md`:
    - **Goal** — one clear sentence describing what the agent does
-   - **Input** — typed fields the agent receives
+   - **Configuration** — constructor parameters (URLs, model names, keys)
+   - **Input** — typed fields the agent receives at `run()` time
    - **Tasks** — ordered steps to achieve the goal
-   - **Tools** — `@LLMTool`-decorated functions with side-effect declarations
+   - **Tools** — `@LLMTool`-decorated structs with side-effect declarations
    - **Output** — typed result the agent returns
-   - **Constraints** — rules the agent must never violate
+   - **Errors** — named error cases and when each is thrown
    - **Success criteria** — observable pass/fail conditions
-3. Customize `Agents/<YourAgentName>/CodeGen/Overview.md` if the agent needs generation overrides
-4. Run the generator to produce `Generated/` Swift files
-5. Open a pull request containing the spec files and generated output only
+3. Customize `Agents/<YourAgentName>/specs/Overview.md` for agent-specific generation guidance
+4. Run the generator (Claude Code) to produce `Sources/`, `CLI/`, and `Tests/` Swift files
+5. Build and run `swift test` to verify all tests pass
+6. Open a pull request containing spec files and generated output together
 
 ### Pull request guidelines
 
-- PRs must not contain manually edited `.swift` files inside any `Generated/` directory
+- PRs must not contain manually edited `.swift` files in `Sources/`, `CLI/`, or `Tests/`
 - Spec changes and their generated output belong in the same commit
-- Describe what the spec change achieves and how you verified the generated output (compile, run, transcript inspection)
+- Describe what the spec change achieves and how you verified the generated output (compile, test, transcript inspection)
 - For spec-only PRs (no generation yet), prefix the title with `[Spec]`
 
 ### Issues
@@ -282,9 +301,9 @@ This project is released under the **MIT License** — use it, fork it, build on
 
 | Library | Purpose |
 |---|---|
-| [SwiftSynapseMacros](https://github.com/RichNasz/SwiftSynapseMacros) | Core agent macros: observability, background execution, transcript |
-| [SwiftOpenResponsesDSL](https://github.com/RichNasz/SwiftOpenResponsesDSL) | Result-builder DSL for structured LLM response construction |
-| [SwiftLLMToolMacros](https://github.com/RichNasz/SwiftLLMToolMacros) | Compile-time `@LLMTool` schema generation and dispatch |
+| [SwiftSynapseMacros](https://github.com/RichNasz/SwiftSynapseMacros) | Agent creation macros — `@SpecDrivenAgent` synthesizes agent boilerplate |
+| [SwiftOpenResponsesDSL](https://github.com/RichNasz/SwiftOpenResponsesDSL) | Base LLM communication layer — `ResponseRequest`, `LLMClient`, `ResponseObject` |
+| [SwiftLLMToolMacros](https://github.com/RichNasz/SwiftLLMToolMacros) | Tool definition macros — `@LLMTool` / `@LLMToolArguments` generate `FunctionToolParam` schemas |
 
 Follow along: [@naszcyniec](https://x.com/naszcyniec) on X
 
