@@ -20,6 +20,24 @@ Each file in `CodeGenSpecs/` defines a **shared concern** — a cross-cutting pa
 | `Shared-Tool-Registry.md` | How tools are registered, discovered, and dispatched |
 | `Shared-Transcript.md` | The canonical transcript model and streaming delta protocol |
 | `README-Generation.md` | Rules for generating the top-level `README.md` |
+| `Agent-README-Generation.md` | Rules for generating per-agent `README.md` files |
+
+---
+
+## Library Hierarchy
+
+Understanding the dependency order is required for correct import decisions:
+
+| Package | Depends on | Purpose |
+|---------|------------|---------|
+| `SwiftOpenResponsesDSL` | Foundation only | LLM communication — `ResponseRequest`, `LLMClient`, `ResponseObject` |
+| `SwiftSynapseMacros` | `SwiftOpenResponsesDSL` | Agent creation macros — `@SpecDrivenAgent` synthesizes agent boilerplate |
+| `SwiftLLMToolMacros` | `SwiftOpenResponsesDSL` | Tool macros — `@LLMTool` / `@LLMToolArguments` generate `FunctionToolParam` schemas |
+
+When generating imports for an agent file:
+- Always include `SwiftOpenResponsesDSL` if the agent sends any LLM request.
+- Include `SwiftSynapseMacros` for every agent actor (provides the `@SpecDrivenAgent` macro and macro-generated members).
+- Include `SwiftLLMToolMacros` only in files that define tool structs.
 
 ---
 
@@ -37,5 +55,5 @@ Each file in `CodeGenSpecs/` defines a **shared concern** — a cross-cutting pa
 - All generated types use `@Observable` for state exposure.
 - All async work uses structured concurrency (`async`/`await`, `TaskGroup`, `AsyncStream`).
 - Tool schemas are generated from `@LLMTool` macros (SwiftLLMToolMacros).
-- Responses are constructed via `SwiftResponsesDSL`.
+- Responses are constructed via `SwiftOpenResponsesDSL`.
 - No `import` of third-party AI frameworks is allowed in generated files.

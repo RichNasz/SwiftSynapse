@@ -32,7 +32,7 @@ This README is the primary entry point for visitors, explaining the project, sho
    - 4–6 sentences describing:
      - What SwiftSynapse is (showcase + macro-powered agent framework)
      - Core value (native Swift agents with observability, background execution, on-device priority)
-     - Built using SwiftSynapseMacros, SwiftResponsesDSL, SwiftLLMToolMacros
+     - Built using SwiftSynapseMacros, SwiftOpenResponsesDSL, SwiftLLMToolMacros
      - AI-first workflow: all code generated from specs via Claude Code
 
 3. **Key Features**
@@ -80,7 +80,7 @@ This README is the primary entry point for visitors, explaining the project, sho
 
 9. **License & Links**
    - MIT License
-   - Related repos: SwiftSynapseMacros, SwiftResponsesDSL, SwiftLLMToolMacros
+   - Related repos: SwiftSynapseMacros, SwiftOpenResponsesDSL, SwiftLLMToolMacros
    - Optional: X handle (@naszcyniec)
 
 ## Visual & Formatting Requirements

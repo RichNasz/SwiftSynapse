@@ -24,7 +24,7 @@
 
 SwiftSynapse is an open-source showcase and framework for building smart, autonomous AI agents natively in Swift — with no Python bridges, no heavy external runtimes, and no compromises on type safety or platform integration. Every agent we ship is **observable**, **background-capable**, and **macro-powered**: reasoning steps, tool calls, and streaming output surface directly in SwiftUI with zero Combine plumbing.
 
-We built SwiftSynapse on three focused libraries — **SwiftSynapseMacros**, **SwiftResponsesDSL**, and **SwiftLLMToolMacros** — that handle observability wiring, structured LLM output, and compile-time tool schemas respectively. Agents stay lean because the macro layer absorbs the boilerplate. On devices that support it (iOS 26+, macOS 26+), agents run on-device first via Apple's **Foundation Models** framework; a `LLMClient` protocol provides transparent fallback to OpenAI-compatible cloud endpoints.
+We built SwiftSynapse on three focused libraries — **SwiftSynapseMacros**, **SwiftOpenResponsesDSL**, and **SwiftLLMToolMacros** — that handle observability wiring, structured LLM output, and compile-time tool schemas respectively. Agents stay lean because the macro layer absorbs the boilerplate. On devices that support it (iOS 26+, macOS 26+), agents run on-device first via Apple's **Foundation Models** framework; a `LLMClient` protocol provides transparent fallback to OpenAI-compatible cloud endpoints.
 
 This project follows a strict **spec-driven development (SDD)** workflow: every `.swift` file is a generated artifact. Human authors write and refine Markdown specifications; Claude Code (or an equivalent AI agent) produces all implementation code from those specs. Generated files are never edited manually — to change behavior, you update the spec and regenerate. See [VISION.md](./VISION.md) for the full project vision and non-negotiables.
 
@@ -193,7 +193,7 @@ SwiftSynapse's generated agents depend on three macro libraries. Add them to you
 // Package.swift
 dependencies: [
     .package(url: "https://github.com/RichNasz/SwiftSynapseMacros", from: "0.1.0"),
-    .package(url: "https://github.com/RichNasz/SwiftResponsesDSL",  from: "0.1.0"),
+    .package(url: "https://github.com/RichNasz/SwiftOpenResponsesDSL",  from: "0.1.0"),
     .package(url: "https://github.com/RichNasz/SwiftLLMToolMacros",  from: "0.1.0"),
 ],
 targets: [
@@ -201,7 +201,7 @@ targets: [
         name: "YourApp",
         dependencies: [
             .product(name: "SwiftSynapseMacros", package: "SwiftSynapseMacros"),
-            .product(name: "SwiftResponsesDSL",  package: "SwiftResponsesDSL"),
+            .product(name: "SwiftOpenResponsesDSL",  package: "SwiftOpenResponsesDSL"),
             .product(name: "SwiftLLMToolMacros", package: "SwiftLLMToolMacros"),
         ]
     )
@@ -214,7 +214,7 @@ targets: [
 
 ```swift
 import SwiftSynapseMacros
-import SwiftResponsesDSL
+import SwiftOpenResponsesDSL
 
 @Observable
 @MainActor
@@ -283,7 +283,7 @@ This project is released under the **MIT License** — use it, fork it, build on
 | Library | Purpose |
 |---|---|
 | [SwiftSynapseMacros](https://github.com/RichNasz/SwiftSynapseMacros) | Core agent macros: observability, background execution, transcript |
-| [SwiftResponsesDSL](https://github.com/RichNasz/SwiftResponsesDSL) | Result-builder DSL for structured LLM response construction |
+| [SwiftOpenResponsesDSL](https://github.com/RichNasz/SwiftOpenResponsesDSL) | Result-builder DSL for structured LLM response construction |
 | [SwiftLLMToolMacros](https://github.com/RichNasz/SwiftLLMToolMacros) | Compile-time `@LLMTool` schema generation and dispatch |
 
 Follow along: [@naszcyniec](https://x.com/naszcyniec) on X
