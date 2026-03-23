@@ -1,4 +1,4 @@
-<!-- Generated from CodeGenSpecs/README-Generation.md + Agents/SimpleEcho/specs/SPEC.md — Do not edit manually. -->
+<!-- Generated from CodeGenSpecs/Agent-README-Generation.md + Agents/SimpleEcho/specs/SPEC.md — Do not edit manually. -->
 
 # SimpleEcho
 
@@ -6,9 +6,9 @@ Echo user input back with a prefix — the simplest proof-of-concept agent in Sw
 
 ## Overview
 
-SimpleEcho validates the spec-to-codegen pipeline with the minimal possible agent. It takes a string, prepends a prefix, and returns it. No LLM calls, no tools, no background execution — just the core agent lifecycle (input, transcript, output). It uses only the default shared patterns: observability via `@Observable` status/transcript and the `@SpecDrivenAgent` macro.
+SimpleEcho validates the spec-to-codegen pipeline with the minimal possible agent. It takes a string, prepends a prefix, and returns it. No LLM calls, no tools, no background execution — just the core agent lifecycle (input, transcript, output). It uses only the default shared patterns: observability via `ObservableTranscript` and `AgentStatus`, and the `@SpecDrivenAgent` macro.
 
-**Platforms:** iOS 18+, macOS 15+, visionOS 2+
+**Platforms:** iOS 26+, macOS 26+, visionOS 2+
 
 ## Quick Start
 
@@ -24,7 +24,7 @@ swift run simple-echo 'Hello, SwiftSynapse!'
 import SimpleEchoAgent
 
 let agent = SimpleEcho()
-let result = try await agent.run(goal: "Hello, SwiftSynapse!")
+let result = try await agent.execute(goal: "Hello, SwiftSynapse!")
 print(result) // "Echo from SwiftSynapse: Hello, SwiftSynapse!"
 ```
 
@@ -38,7 +38,7 @@ struct EchoView: View {
     @State private var agent = SimpleEcho()
 
     var body: some View {
-        // agent.status and agent.transcript update automatically
+        // agent.status and agent.transcript.entries update automatically
     }
 }
 ```
@@ -54,16 +54,16 @@ struct EchoView: View {
 | Field | Type | Description |
 |-------|------|-------------|
 | return value | `String` | `"Echo from SwiftSynapse: \(goal)"` |
-| `transcript` | `[TranscriptEntry]` | Updated with user + assistant entries |
+| `transcript` | `ObservableTranscript` | Updated with user + assistant entries |
 
 ## How It Works
 
-1. **Validate input** — Check that `goal` is non-empty; throw `SimpleEchoError.emptyGoal` and set status to `.failed` if empty.
+1. **Validate input** — Check that `goal` is non-empty; throw `SimpleEchoError.emptyGoal` and set status to `.error(SimpleEchoError.emptyGoal)` if empty.
 2. **Start running** — Set status to `.running`.
 3. **Record user input** — Append a `.userMessage(goal)` transcript entry.
 4. **Produce echo** — Build the echoed string: `"Echo from SwiftSynapse: \(goal)"`.
 5. **Record output** — Append an `.assistantMessage` transcript entry with the echoed string.
-6. **Complete** — Set status to `.completed`.
+6. **Complete** — Set status to `.completed(echoed)`.
 
 ## Transcript Example
 
@@ -88,7 +88,7 @@ Tests validate:
 - Transcript has exactly 2 entries after a successful run
 - First entry is `.userMessage` with content matching the goal
 - Second entry is `.assistantMessage` with content matching `"Echo from SwiftSynapse: \(goal)"`
-- Status is `.completed` after success, `.failed` after empty input
+- Status is `.completed` after success, `.error` after empty input
 - Completes without throwing for any non-empty input
 
 ## Constraints

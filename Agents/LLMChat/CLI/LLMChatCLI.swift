@@ -25,7 +25,7 @@ struct LLMChatCLI: AsyncParsableCommand {
 
     func run() async throws {
         let agent = try LLMChat(serverURL: serverURL, modelName: model, apiKey: apiKey)
-        let result = try await agent.run(goal: goal)
+        let result = try await agent.execute(goal: goal)
         print(result)
     }
 }

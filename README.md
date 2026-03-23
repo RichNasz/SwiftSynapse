@@ -33,7 +33,7 @@ This project follows a strict **spec-driven development (SDD)** workflow: every 
 ## Key Features
 
 - **Spec-Driven Development** — every agent is defined by a `SPEC.md`; all Swift code is generated from it, never hand-written
-- **Observable Agents** — `@Observable` state exposes live transcript, tool calls, and reasoning steps directly to SwiftUI views
+- **Observable Agents** — `@Observable` state exposes live transcript, tool calls, and reasoning steps directly to SwiftUI views via `ObservableTranscript`
 - **Background Execution** — agents register a `BGContinuedProcessingTask` and checkpoint progress, surviving app suspension cleanly
 - **Type-Safe Tools** — `@LLMTool` macros generate JSON schemas at compile time; no stringly-typed dispatch, no runtime schema errors
 - **On-Device Priority** — Apple Foundation Models framework used first on iOS 26+ / macOS 26+ / visionOS 2.4+ for full privacy
@@ -43,7 +43,7 @@ This project follows a strict **spec-driven development (SDD)** workflow: every 
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 **1. Clone the repository**
 
@@ -76,7 +76,7 @@ swift run llm-chat-personas "Explain black holes." \
 **4. Or invoke an agent in code**
 
 ```swift
-import SwiftSynapseMacrosClient
+import LLMChatAgent
 
 // Instantiate — provide an Open Responses API endpoint
 let agent = try LLMChat(
@@ -85,12 +85,12 @@ let agent = try LLMChat(
 )
 
 // Run — async/await, strict concurrency
-let reply = try await agent.run(goal: "Summarize the Swift 6.2 release notes.")
+let reply = try await agent.execute(goal: "Summarize the Swift 6.2 release notes.")
 print(reply)
 
 // Observe — transcript and status are @Observable; bind directly in SwiftUI
-let transcript = await agent.transcript   // [TranscriptEntry]
-let status = await agent.status           // LLMChat.Status
+let transcript = await agent.transcript   // ObservableTranscript
+let status = await agent.status           // AgentStatus
 ```
 
 Bind live agent state to any SwiftUI view:
@@ -105,14 +105,15 @@ struct ChatView: View {
 
     var body: some View {
         VStack {
-            TranscriptView(entries: agent.transcript)
+            // agent.transcript.entries updates automatically — bind to a list
+            TranscriptView(entries: agent.transcript.entries)
 
-            if agent.isRunning {
-                ProgressView("Thinking…")
+            if case .running = agent.status {
+                ProgressView("Thinking...")
             }
         }
         .task {
-            try? await agent.run(goal: goal)
+            try? await agent.execute(goal: goal)
         }
     }
 }
@@ -138,10 +139,10 @@ SwiftSynapse ships runnable agents today, with larger showcase agents in progres
 
 | Agent | Description | Key Patterns Demonstrated |
 |---|---|---|
-| [PRReviewer](./Agents/PRReviewer/specs/SPEC.md) | Analyzes GitHub PRs for style, performance, and security issues; suggests concrete patches | Tool calling, structured patches, multi-phase review |
-| [PerformanceOptimizer](./Agents/PerformanceOptimizer/specs/SPEC.md) | Identifies bottlenecks in Swift code and proposes targeted optimizations | Benchmark tools, code rewrite suggestions, structured output |
-| [TaskPlanner](./Agents/TaskPlanner/specs/SPEC.md) | Multi-phase personal productivity agent that breaks goals into sub-tasks and tracks completion | Planning, verification, sub-agent orchestration, memory |
-| [ResearchAssistant](./Agents/ResearchAssistant/specs/SPEC.md) | Long-running research agent with retrieval-augmented generation and session persistence | Memory, web tools, RAG, background continuation |
+| PRReviewer | Analyzes GitHub PRs for style, performance, and security issues; suggests concrete patches | Tool calling, structured patches, multi-phase review |
+| PerformanceOptimizer | Identifies bottlenecks in Swift code and proposes targeted optimizations | Benchmark tools, code rewrite suggestions, structured output |
+| TaskPlanner | Multi-phase personal productivity agent that breaks goals into sub-tasks and tracks completion | Planning, verification, sub-agent orchestration, memory |
+| ResearchAssistant | Long-running research agent with retrieval-augmented generation and session persistence | Memory, web tools, RAG, background continuation |
 
 > New agents are bootstrapped from [Agents/TemplateAgent/specs/SPEC.md](./Agents/TemplateAgent/specs/SPEC.md). Copy it, fill in the spec, and run the generator.
 
@@ -156,28 +157,28 @@ SwiftSynapse is fully **AI-first**: no human writes implementation code. Every `
 ### The workflow
 
 ```
-┌─────────────────────────────────────────────┐
-│  1. Write or refine a spec                  │
-│     VISION.md / CodeGenSpecs/ / SPEC.md     │
-└────────────────────┬────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────┐
-│  2. Run the generator                       │
-│     Claude Code reads spec → writes Swift   │
-└────────────────────┬────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────┐
-│  3. Review generated output                 │
-│     Compile, test, iterate on spec if wrong │
-└────────────────────┬────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────┐
-│  4. Commit spec + generated artifacts       │
-│     Never edit generated .swift files       │
-└─────────────────────────────────────────────┘
++---------------------------------------------+
+|  1. Write or refine a spec                  |
+|     VISION.md / CodeGenSpecs/ / SPEC.md     |
++--------------------+------------------------+
+                     |
+                     v
++---------------------------------------------+
+|  2. Run the generator                       |
+|     Claude Code reads spec -> writes Swift  |
++--------------------+------------------------+
+                     |
+                     v
++---------------------------------------------+
+|  3. Review generated output                 |
+|     Compile, test, iterate on spec if wrong |
++--------------------+------------------------+
+                     |
+                     v
++---------------------------------------------+
+|  4. Commit spec + generated artifacts       |
+|     Never edit generated .swift files       |
++---------------------------------------------+
 ```
 
 ### What lives where
@@ -242,7 +243,7 @@ public actor MyAgent {
         self._llmClient = try LLMClient(baseURL: serverURL, apiKey: apiKey ?? "")
     }
 
-    public func run(goal: String) async throws -> String {
+    public func execute(goal: String) async throws -> String {
         _status = .running
         _transcript.append(.userMessage(goal))
 
@@ -257,13 +258,13 @@ public actor MyAgent {
         let text = response.firstOutputText ?? ""
 
         _transcript.append(.assistantMessage(text))
-        _status = .completed
+        _status = .completed(text)
         return text
     }
 }
 ```
 
-The `@SpecDrivenAgent` macro generates `Status`, `_status`, `_transcript`, `status`, `isRunning`, `transcript`, and `client` — all the boilerplate an observable agent needs.
+The `@SpecDrivenAgent` macro generates `_status`, `_transcript`, `_client`, `status`, `transcript`, `client`, `configure(client:)`, and `run(goal:)` — all the boilerplate an observable agent needs. Agent-specific logic goes in `execute(goal:)`.
 
 ---
 
@@ -273,11 +274,11 @@ We welcome contributions — especially new agent specs, improvements to shared 
 
 ### Adding a new agent
 
-1. Copy `Agents/TemplateAgent/` → `Agents/<YourAgentName>/`
+1. Copy `Agents/TemplateAgent/` -> `Agents/<YourAgentName>/`
 2. Fill in `Agents/<YourAgentName>/specs/SPEC.md`:
    - **Goal** — one clear sentence describing what the agent does
    - **Configuration** — constructor parameters (URLs, model names, keys)
-   - **Input** — typed fields the agent receives at `run()` time
+   - **Input** — typed fields the agent receives at `execute()` time
    - **Tasks** — ordered steps to achieve the goal
    - **Tools** — `@LLMTool`-decorated structs with side-effect declarations
    - **Output** — typed result the agent returns

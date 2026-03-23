@@ -1,4 +1,4 @@
-<!-- Generated from CodeGenSpecs/README-Generation.md + Agents/LLMChat/specs/SPEC.md — Do not edit manually. -->
+<!-- Generated from CodeGenSpecs/Agent-README-Generation.md + Agents/LLMChat/specs/SPEC.md — Do not edit manually. -->
 
 # LLMChat
 
@@ -6,7 +6,7 @@ Forward a prompt to any Open Responses API-compatible endpoint and return the mo
 
 ## Overview
 
-LLMChat is the foundational LLM agent in SwiftSynapse. It handles URL validation at init time, wraps a single user prompt in a `ResponseRequest`, sends it via `LLMClient`, and returns the reply. It demonstrates the canonical pattern for all network-backed agents: timeout configuration, transcript management, and named error cases.
+LLMChat is the foundational LLM agent in SwiftSynapse. It handles URL validation at init time, wraps a single user prompt in a `ResponseRequest`, sends it via `LLMClient`, and returns the reply. It demonstrates the canonical pattern for all network-backed agents: timeout configuration, transcript management via `ObservableTranscript`, and named error cases with `AgentStatus`.
 
 **Platforms:** iOS 26+, macOS 26+, visionOS 2.4+
 
@@ -38,7 +38,7 @@ let agent = try LLMChat(
     serverURL: "http://127.0.0.1:1234/v1/responses",
     modelName: "llama3"
 )
-let reply = try await agent.run(goal: "Explain Swift actors in one paragraph.")
+let reply = try await agent.execute(goal: "Explain Swift actors in one paragraph.")
 print(reply)
 ```
 
@@ -56,10 +56,10 @@ struct ChatView: View {
 
     var body: some View {
         VStack {
-            if agent.isRunning {
-                ProgressView("Thinking…")
+            if case .running = agent.status {
+                ProgressView("Thinking...")
             }
-            // agent.transcript updates automatically — bind to a list
+            // agent.transcript.entries updates automatically — bind to a list
         }
     }
 }
@@ -87,18 +87,18 @@ The LLM's reply as a `String`.
 
 ## How It Works
 
-1. **Validate goal** — Guard non-empty; throw `LLMChatError.emptyGoal` and set status `.failed` if empty.
+1. **Validate goal** — Guard non-empty; throw `LLMChatError.emptyGoal` and set status `.error(LLMChatError.emptyGoal)` if empty.
 2. **Start running** — Set status to `.running`; append `.userMessage(goal)` to transcript.
 3. **Build request** — `ResponseRequest` with `RequestTimeout(300)` and `ResourceTimeout(300)` in the config block, `User(goal)` as input.
 4. **Send** — `try await _llmClient.send(request)`; extract text via `response.firstOutputText`.
-5. **Guard response** — Empty or missing reply → set status `.failed` + throw `LLMChatError.noResponseContent`.
-6. **Complete** — Append `.assistantMessage(responseText)` to transcript; set status `.completed`; return text.
+5. **Guard response** — Empty or missing reply -> set status `.error(LLMChatError.noResponseContent)` + throw.
+6. **Complete** — Append `.assistantMessage(responseText)` to transcript; set status `.completed(responseText)`; return text.
 
 ## Transcript Example
 
 ```
 [user]      Explain Swift actors in one paragraph.
-[assistant] Swift actors are reference types that protect their mutable state…
+[assistant] Swift actors are reference types that protect their mutable state...
 ```
 
 ## Errors
@@ -118,7 +118,7 @@ swift test --filter LLMChatTests
 ```
 
 Tests validate:
-- Status is `.idle` before `run()` is called
+- Status is `.idle` before `execute()` is called
 - Throws `LLMChatError.emptyGoal` when `goal` is `""`
 - Throws `LLMChatError.invalidServerURL` for malformed or non-http/https URLs
 - (Network-dependent tests require a live endpoint and are not included in the unit suite)

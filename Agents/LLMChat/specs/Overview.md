@@ -21,33 +21,34 @@
 
 ## State properties
 
-No additional state beyond the macro-generated defaults:
+Macro-generated defaults:
 - `_status: AgentStatus` (macro-managed)
-- `_transcript: [TranscriptEntry]` (macro-managed)
+- `_transcript: ObservableTranscript` (macro-managed)
+- `_client: LLMClient?` (macro-managed, unused — agent uses its own `_llmClient`)
 
-Custom stored property:
-- `modelName: String` — captured at init, used in every `run()` call
-- `client: LLMClient` — initialized in `init`, holds connection to the Open Responses endpoint
+Custom stored properties:
+- `modelName: String` — captured at init, used in every `execute()` call
+- `_llmClient: LLMClient` — initialized in `init`, holds connection to the Open Responses endpoint
 
 ---
 
 ## Init rules
 
-1. Validate `serverURL` with `URL(string:)`; throw `LLMChatError.invalidServerURL` if nil.
+1. Validate `serverURL` with `URL(string:)`; throw `LLMChatError.invalidServerURL` if nil or non-http/https.
 2. Store `modelName`.
-3. `client = try LLMClient(baseURL: serverURL, apiKey: apiKey ?? "")`.
+3. `_llmClient = try LLMClient(baseURL: serverURL, apiKey: apiKey ?? "")`.
 
 ---
 
-## run() rules
+## execute() rules
 
-1. Guard non-empty goal → `.failed` + throw `LLMChatError.emptyGoal`.
-2. `_status = .running`; append `.user` transcript entry.
+1. Guard non-empty goal → `.error(LLMChatError.emptyGoal)` + throw.
+2. `_status = .running`; append `.userMessage(goal)`.
 3. `let request = try ResponseRequest(model: modelName) { try RequestTimeout(300); try ResourceTimeout(300) } input: { User(goal) }`
-4. `let response = try await client.send(request)`
+4. `let response = try await _llmClient.send(request)`
 5. `let responseText = response.firstOutputText ?? ""`
-6. Guard non-empty → `.failed` + throw `LLMChatError.noResponseContent`.
-7. Append `.assistant` transcript entry; `_status = .completed`; return text.
+6. Guard non-empty → `.error(LLMChatError.noResponseContent)` + throw.
+7. Append `.assistantMessage(responseText)`; `_status = .completed(responseText)`; return text.
 
 ---
 

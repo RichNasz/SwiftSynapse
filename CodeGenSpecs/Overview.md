@@ -14,11 +14,11 @@ Each file in `CodeGenSpecs/` defines a **shared concern** — a cross-cutting pa
 
 | File | Concern |
 |------|---------|
-| `Shared-Observability.md` | How agent state and transcript are exposed via `@Observable` |
+| `Shared-Observability.md` | How agent state and transcript are exposed via `@Observable` (`AgentStatus`, `ObservableTranscript`) |
 | `Shared-Background-Execution.md` | How agents integrate with `BGContinuedProcessingTask` and Swift concurrency |
 | `Shared-LLM-Client.md` | The shared LLM client protocol and injection pattern |
 | `Shared-Tool-Registry.md` | How tools are registered, discovered, and dispatched |
-| `Shared-Transcript.md` | The canonical transcript model and streaming delta protocol |
+| `Shared-Transcript.md` | The canonical transcript model (`ObservableTranscript`, `TranscriptEntry`) and streaming protocol |
 | `README-Generation.md` | Rules for generating the top-level `README.md` |
 | `Agent-README-Generation.md` | Rules for generating per-agent `README.md` files |
 
@@ -30,29 +30,47 @@ Understanding the dependency order is required for correct import decisions:
 
 | Package | Depends on | Purpose |
 |---------|------------|---------|
-| `SwiftOpenResponsesDSL` | Foundation only | LLM communication — `ResponseRequest`, `LLMClient`, `ResponseObject` |
-| `SwiftSynapseMacros` | `SwiftOpenResponsesDSL` | Agent creation macros — `@SpecDrivenAgent` synthesizes agent boilerplate |
+| `SwiftOpenResponsesDSL` | Foundation only | LLM communication — `ResponseRequest`, `LLMClient`, `ResponseObject`, `TranscriptEntry` |
+| `SwiftSynapseMacros` | `SwiftOpenResponsesDSL`, `SwiftLLMToolMacros` | Agent creation macros — `@SpecDrivenAgent` synthesizes `AgentStatus`, `ObservableTranscript`, `LLMClient`, and `run(goal:)` |
 | `SwiftLLMToolMacros` | `SwiftOpenResponsesDSL` | Tool macros — `@LLMTool` / `@LLMToolArguments` generate `FunctionToolParam` schemas |
 
 When generating imports for an agent file:
-- Always include `SwiftOpenResponsesDSL` if the agent sends any LLM request.
-- Include `SwiftSynapseMacros` for every agent actor (provides the `@SpecDrivenAgent` macro and macro-generated members).
-- Include `SwiftLLMToolMacros` only in files that define tool structs.
+- Import `SwiftSynapseMacrosClient` for every agent actor — it re-exports both `SwiftOpenResponsesDSL` and `SwiftLLMToolMacros`, so a single import covers all types.
+- Import `Foundation` explicitly only if the agent uses `URL` or other Foundation types directly.
+
+---
+
+## `@SpecDrivenAgent` Macro — Generated Members
+
+The macro generates these members on every agent actor:
+
+| Member | Type | Purpose |
+|--------|------|---------|
+| `_status` | `AgentStatus` | Private backing for lifecycle state (`.idle`, `.running`, `.paused`, `.error(Error)`, `.completed(Any)`) |
+| `_transcript` | `ObservableTranscript` | Private backing for conversation history |
+| `_client` | `LLMClient?` | Private optional LLM client |
+| `status` | `AgentStatus` | Public read-only accessor |
+| `transcript` | `ObservableTranscript` | Public read-only accessor |
+| `client` | `LLMClient` | Public accessor (fatalError if not configured) |
+| `configure(client:)` | method | Inject an LLM client |
+| `run(goal:)` | `async throws` | Generic runtime loop via `AgentRuntime` |
+
+Agent-specific logic should be placed in a custom `execute(goal:)` method (or similar), which accesses `_status` and `_transcript` directly.
 
 ---
 
 ## How Generation Works
 
-1. An agent author writes or updates `Agents/<AgentName>/SPEC.md`.
+1. An agent author writes or updates `Agents/<AgentName>/specs/SPEC.md`.
 2. The generator reads the agent spec **and** all files in `CodeGenSpecs/`.
-3. Generated `.swift` files are written to `Agents/<AgentName>/Generated/`.
+3. Generated `.swift` files are written to `Agents/<AgentName>/Sources/`, `CLI/`, and `Tests/`.
 4. The generated files are never edited manually. To change behavior, update the spec and regenerate.
 
 ---
 
 ## Conventions
 
-- All generated types use `@Observable` for state exposure.
+- All agent actors use `@SpecDrivenAgent` for observable state (`AgentStatus`, `ObservableTranscript`).
 - All async work uses structured concurrency (`async`/`await`, `TaskGroup`, `AsyncStream`).
 - Tool schemas are generated from `@LLMTool` macros (SwiftLLMToolMacros).
 - Responses are constructed via `SwiftOpenResponsesDSL`.

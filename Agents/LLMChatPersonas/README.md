@@ -1,4 +1,4 @@
-<!-- Generated from CodeGenSpecs/README-Generation.md + Agents/LLMChatPersonas/specs/SPEC.md — Do not edit manually. -->
+<!-- Generated from CodeGenSpecs/Agent-README-Generation.md + Agents/LLMChatPersonas/specs/SPEC.md — Do not edit manually. -->
 
 # LLMChatPersonas
 
@@ -33,10 +33,10 @@ Output:
 
 ```
 --- Original Response ---
-A black hole is a region of spacetime where gravity is so strong that…
+A black hole is a region of spacetime where gravity is so strong that...
 
 --- pirate Response ---
-Arrr, ye landlubber! A black hole be a fearsome void in the cosmos where…
+Arrr, ye landlubber! A black hole be a fearsome void in the cosmos where...
 ```
 
 **Programmatic — no persona:**
@@ -48,7 +48,7 @@ let agent = try LLMChatPersonas(
     serverURL: "http://127.0.0.1:1234/v1/responses",
     modelName: "llama3"
 )
-let reply = try await agent.run(goal: "What is a neutron star?")
+let reply = try await agent.execute(goal: "What is a neutron star?")
 print(reply)
 ```
 
@@ -59,7 +59,7 @@ let agent = try LLMChatPersonas(
     serverURL: "http://127.0.0.1:1234/v1/responses",
     modelName: "llama3"
 )
-let personaReply = try await agent.run(goal: "What is a neutron star?", persona: "Yoda")
+let personaReply = try await agent.execute(goal: "What is a neutron star?", persona: "Yoda")
 
 // Access the original (pre-rewrite) response
 let original = await agent.lastInitialResponse
@@ -86,30 +86,30 @@ URL validation occurs at init time. Throws `LLMChatPersonasError.invalidServerUR
 
 The final LLM reply as a `String` — persona-rewritten if a persona was provided, plain otherwise.
 
-The original (pre-persona) response is also available via `agent.lastInitialResponse: String?` after `run()` returns.
+The original (pre-persona) response is also available via `agent.lastInitialResponse: String?` after `execute()` returns.
 
 ## How It Works
 
 **Without persona (2-step):**
 
-1. **Validate goal** — Guard non-empty; throw `LLMChatPersonasError.emptyGoal` and set status `.failed` if empty.
+1. **Validate goal** — Guard non-empty; throw `LLMChatPersonasError.emptyGoal` and set status `.error(...)` if empty.
 2. **Start running** — Set status to `.running`; append `.userMessage(goal)` to transcript.
 3. **First request** — `ResponseRequest` with `RequestTimeout(300)` + `ResourceTimeout(300)`, `User(goal)` as input.
-4. **Guard response** — Empty reply → set status `.failed` + throw `LLMChatPersonasError.noResponseContent`.
+4. **Guard response** — Empty reply -> set status `.error(...)` + throw `LLMChatPersonasError.noResponseContent`.
 5. **Store** — Save `initialResponse` to `lastInitialResponse`; append `.assistantMessage(initialResponse)`.
-6. **Complete** — Set status `.completed`; return `initialResponse`.
+6. **Complete** — Set status `.completed(initialResponse)`; return `initialResponse`.
 
 **With persona (4-step):**
 
-Steps 1–5 above, then:
+Steps 1-5 above, then:
 
 6. **Capture ID** — Record `firstResponseId = firstResponse.id` for conversation threading.
 7. **Build persona prompt** — Short follow-up instruction (no embedded response text):
    > *"Rewrite your previous response in the style and voice of {persona}. Preserve all factual content but express it exactly as {persona} would speak."*
 8. **Append** — `.userMessage(personaPrompt)` to transcript.
 9. **Second request** — `ResponseRequest` with `PreviousResponseId(firstResponseId)` in the config block; API supplies conversation context from history.
-10. **Guard persona response** — Empty reply → set status `.failed` + throw `LLMChatPersonasError.noPersonaResponseContent`.
-11. **Complete** — Append `.assistantMessage(personaResponse)`; set status `.completed`; return `personaResponse`.
+10. **Guard persona response** — Empty reply -> set status `.error(...)` + throw `LLMChatPersonasError.noPersonaResponseContent`.
+11. **Complete** — Append `.assistantMessage(personaResponse)`; set status `.completed(personaResponse)`; return `personaResponse`.
 
 ## Transcript Shape
 
@@ -136,7 +136,7 @@ swift test --filter LLMChatPersonasTests
 ```
 
 Tests validate:
-- Status is `.idle` before `run()` is called
+- Status is `.idle` before `execute()` is called
 - Throws `LLMChatPersonasError.emptyGoal` when `goal` is `""`
 - Throws `LLMChatPersonasError.invalidServerURL` for malformed or non-http/https URLs
 - (Persona/network-dependent tests require a live endpoint and are not included in the unit suite)

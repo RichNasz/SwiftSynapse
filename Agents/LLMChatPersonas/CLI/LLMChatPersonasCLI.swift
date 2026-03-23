@@ -28,7 +28,7 @@ struct LLMChatPersonasCLI: AsyncParsableCommand {
 
     func run() async throws {
         let agent = try LLMChatPersonas(serverURL: serverURL, modelName: model, apiKey: apiKey)
-        let result = try await agent.run(goal: goal, persona: persona)
+        let result = try await agent.execute(goal: goal, persona: persona)
 
         if let persona, let initial = await agent.lastInitialResponse {
             print("--- Original Response ---")

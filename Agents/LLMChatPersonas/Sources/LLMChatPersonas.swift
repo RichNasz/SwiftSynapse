@@ -27,9 +27,9 @@ public actor LLMChatPersonas {
         self._llmClient = try LLMClient(baseURL: serverURL, apiKey: apiKey ?? "")
     }
 
-    public func run(goal: String, persona: String? = nil) async throws -> String {
+    public func execute(goal: String, persona: String? = nil) async throws -> String {
         guard !goal.isEmpty else {
-            _status = .failed
+            _status = .error(LLMChatPersonasError.emptyGoal)
             throw LLMChatPersonasError.emptyGoal
         }
         _status = .running
@@ -47,7 +47,7 @@ public actor LLMChatPersonas {
         let initialResponse = firstResponse.firstOutputText ?? ""
 
         guard !initialResponse.isEmpty else {
-            _status = .failed
+            _status = .error(LLMChatPersonasError.noResponseContent)
             throw LLMChatPersonasError.noResponseContent
         }
 
@@ -55,7 +55,7 @@ public actor LLMChatPersonas {
         _transcript.append(.assistantMessage(initialResponse))
 
         guard let persona else {
-            _status = .completed
+            _status = .completed(initialResponse)
             return initialResponse
         }
 
@@ -74,12 +74,12 @@ public actor LLMChatPersonas {
         let personaResponse = secondResponse.firstOutputText ?? ""
 
         guard !personaResponse.isEmpty else {
-            _status = .failed
+            _status = .error(LLMChatPersonasError.noPersonaResponseContent)
             throw LLMChatPersonasError.noPersonaResponseContent
         }
 
         _transcript.append(.assistantMessage(personaResponse))
-        _status = .completed
+        _status = .completed(personaResponse)
         return personaResponse
     }
 }

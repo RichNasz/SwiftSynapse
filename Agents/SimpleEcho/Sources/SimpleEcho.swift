@@ -1,4 +1,4 @@
-// Generated strictly from Agents/SimpleEcho/CodeGen/Overview.md + shared CodeGenSpecs/
+// Generated strictly from Agents/SimpleEcho/specs/Overview.md + shared CodeGenSpecs/
 // Do not edit manually — update the spec and re-generate
 
 import SwiftSynapseMacrosClient
@@ -11,16 +11,16 @@ public actor SimpleEcho {
 
     public init() {}
 
-    public func run(goal: String) async throws -> String {
+    public func execute(goal: String) async throws -> String {
         guard !goal.isEmpty else {
-            _status = .failed
+            _status = .error(SimpleEchoError.emptyGoal)
             throw SimpleEchoError.emptyGoal
         }
         _status = .running
         _transcript.append(.userMessage(goal))
         let echoed = "Echo from SwiftSynapse: \(goal)"
         _transcript.append(.assistantMessage(echoed))
-        _status = .completed
+        _status = .completed(echoed)
         return echoed
     }
 }

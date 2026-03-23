@@ -1,4 +1,4 @@
-// Generated strictly from Agents/SimpleEcho/CodeGen/Overview.md + shared CodeGenSpecs/
+// Generated strictly from Agents/SimpleEcho/specs/Overview.md + shared CodeGenSpecs/
 // Do not edit manually — update the spec and re-generate
 
 import ArgumentParser
@@ -16,12 +16,7 @@ struct SimpleEchoCLI: AsyncParsableCommand {
 
     func run() async throws {
         let agent = SimpleEcho()
-        // Interact with the agent the same way a SwiftUI view would:
-        // call run, then read observable status and transcript
-        let result = try await agent.run(goal: goal)
+        let result = try await agent.execute(goal: goal)
         print(result)
-
-        // The agent's transcript and status are also available for richer output:
-        // await agent.transcript, await agent.status
     }
 }

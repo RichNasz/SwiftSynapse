@@ -25,9 +25,9 @@ public actor LLMChat {
         self._llmClient = try LLMClient(baseURL: serverURL, apiKey: apiKey ?? "")
     }
 
-    public func run(goal: String) async throws -> String {
+    public func execute(goal: String) async throws -> String {
         guard !goal.isEmpty else {
-            _status = .failed
+            _status = .error(LLMChatError.emptyGoal)
             throw LLMChatError.emptyGoal
         }
         _status = .running
@@ -44,12 +44,12 @@ public actor LLMChat {
         let responseText = response.firstOutputText ?? ""
 
         guard !responseText.isEmpty else {
-            _status = .failed
+            _status = .error(LLMChatError.noResponseContent)
             throw LLMChatError.noResponseContent
         }
 
         _transcript.append(.assistantMessage(responseText))
-        _status = .completed
+        _status = .completed(responseText)
         return responseText
     }
 }
