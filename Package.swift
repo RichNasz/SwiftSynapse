@@ -184,5 +184,17 @@ let package = Package(
             ],
             path: "Agents/SkillsEnabledAgent/Tests"
         ),
+        .executableTarget(
+            name: "AgentDashboard",
+            dependencies: [
+                "SimpleEchoAgent",
+                "LLMChatAgent",
+                "StreamingChatAgentAgent",
+                "ToolUsingAgentAgent",
+                .product(name: "SwiftSynapseMacrosClient", package: "SwiftSynapseMacros"),
+                .product(name: "SwiftSynapseUI", package: "SwiftSynapseMacros"),
+            ],
+            path: "Apps/AgentDashboard"
+        ),
     ]
 )
