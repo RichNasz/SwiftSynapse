@@ -28,12 +28,12 @@ URL validation occurs at init time; throws `LLMChatError.invalidServerURL` if th
 
 ## Tasks
 
-1. Validate `goal` is non-empty; throw `LLMChatError.emptyGoal` and set status `.failed` if empty.
-2. Set status to `.running`; append a `.user` transcript entry with `goal`.
+1. Validate `goal` is non-empty; set status `.error(LLMChatError.emptyGoal)` and throw if empty.
+2. Set status to `.running`; append a `.userMessage` transcript entry with `goal`.
 3. Build a `ResponseRequest` with `RequestTimeout(300)` and `ResourceTimeout(300)` in the config block, and `User(goal)` as input.
-4. Call `try await client.send(request)`; extract text via `response.firstOutputText`.
-5. Guard non-empty result → `.failed` + throw `LLMChatError.noResponseContent`.
-6. Append a `.assistant` transcript entry with the response text; set status `.completed`; return the response text.
+4. Call `try await _llmClient.send(request)`; extract text via `response.firstOutputText`.
+5. Guard non-empty result → `.error(LLMChatError.noResponseContent)` + throw.
+6. Append a `.assistantMessage` transcript entry with the response text; set status `.completed`; return the response text.
 
 ---
 

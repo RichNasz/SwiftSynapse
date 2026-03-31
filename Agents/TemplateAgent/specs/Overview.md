@@ -16,7 +16,7 @@ The generator will produce the following Swift files for this agent:
 
 | File | Purpose |
 |------|---------|
-| `[AgentName].swift` | Main `@Observable` agent class |
+| `[AgentName].swift` | Main `@SpecDrivenAgent` actor |
 | `[AgentName]+Tools.swift` | `@LLMTool`-annotated tool functions |
 | `[AgentName]+Background.swift` | `BGContinuedProcessingTask` integration |
 | `[AgentName]+Transcript.swift` | Agent-specific transcript extensions (if any) |

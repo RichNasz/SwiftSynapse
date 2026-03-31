@@ -43,12 +43,12 @@ Target platforms: iOS 26+, macOS 26+, visionOS 2.4+ (where Apple Intelligence an
   Hybrid cloud fallback is supported for broader compatibility, but on-device performance/privacy is the default goal where available.
 
 - **Dependencies**
-  Only Foundation + the three core packages (no additional runtime dependencies):
+  Only Foundation, the Foundation Models framework (conditional), and the three core packages (no additional runtime dependencies):
 
   | Package | Role |
   |---------|------|
   | `SwiftOpenResponsesDSL` | Base LLM communication layer — constructs `ResponseRequest` objects, sends them to Open Responses API-compatible endpoints, and parses `ResponseObject` replies |
-  | `SwiftSynapseMacros` | Agent creation layer — depends on `SwiftOpenResponsesDSL`; provides `@SpecDrivenAgent` and related macros that synthesize boilerplate state, lifecycle, and transcript management for agent types |
+  | `SwiftSynapseMacros` | Agent creation layer — depends on `SwiftOpenResponsesDSL`; provides `@SpecDrivenAgent` and related macros that synthesize boilerplate state, lifecycle, transcript management, configuration (`AgentConfiguration`, `ExecutionMode`), retry (`retryWithBackoff`), telemetry (`TelemetrySink`), tool scheduling (`ToolExecutor`), session resume (`AgentSession`), and the `AgentLLMClient` protocol for unified on-device/cloud inference |
   | `SwiftLLMToolMacros` | Tool definition layer — depends on `SwiftOpenResponsesDSL`; provides `@LLMTool`, `@LLMToolArguments`, and `@LLMToolGuide` macros that generate type-safe `FunctionToolParam` schemas for use in `ResponseRequest` |
 
   ### Dependency hierarchy
@@ -59,10 +59,7 @@ Target platforms: iOS 26+, macOS 26+, visionOS 2.4+ (where Apple Intelligence an
       └── SwiftLLMToolMacros     ← builds on SwiftOpenResponsesDSL to simplify tool definitions
   ```
 
-  **Key rule for code generation:** import the package that matches the concern:
-  - LLM requests/responses → `SwiftOpenResponsesDSL`
-  - Agent scaffolding (status, transcript, macro-generated init) → `SwiftSynapseMacros`
-  - Tool structs (`@LLMTool`, `@LLMToolArguments`) → `SwiftLLMToolMacros`
+  **Key rule for code generation:** import `SwiftSynapseMacrosClient` for every agent actor — it re-exports both `SwiftOpenResponsesDSL` and `SwiftLLMToolMacros`, so a single import covers all types. Import `Foundation` explicitly only if the agent uses `URL` or other Foundation types directly. Import `FoundationModels` inside `#if canImport(FoundationModels)` guards for on-device inference.
 
 - **Core Technical Patterns**  
   - Heavy use of macros for type-safe tools, structured outputs, and observability  
@@ -93,4 +90,4 @@ Target platforms: iOS 26+, macOS 26+, visionOS 2.4+ (where Apple Intelligence an
 - **Web presence**: swiftsynapse.dev (or similar) to be registered for documentation/landing page  
 - Note: Not affiliated with unrelated sites like swiftsynapse.com (entrepreneur automation tools)
 
-Last updated: March 19, 2026
+Last updated: March 31, 2026

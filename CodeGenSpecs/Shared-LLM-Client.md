@@ -6,7 +6,9 @@
 
 ## Summary
 
-All agents communicate with Open Responses API-compatible endpoints through `SwiftOpenResponsesDSL.LLMClient`. This is the single concrete implementation — no raw URLSession, no OpenAI SDK, no Chat Completions endpoints.
+Cloud-based agents communicate with Open Responses API-compatible endpoints through `SwiftOpenResponsesDSL.LLMClient`. On-device agents use `FoundationModelsClient` (see `Shared-Foundation-Models.md`). Both conform to the `AgentLLMClient` protocol, which is the abstraction agents should program against.
+
+For cloud-only agents or legacy agents, `LLMClient` may be used directly. New agents using `AgentConfiguration` receive an `AgentLLMClient` instance based on the configured `ExecutionMode`.
 
 ---
 
@@ -65,6 +67,31 @@ Tool call dispatch:
 
 ---
 
-## Endpoint requirement
+## Streaming
 
-All agents must communicate with Open Responses API-compatible endpoints only (path `/v1/responses`). Chat Completions endpoints (`/v1/chat/completions`) are not supported.
+For agents that consume streaming responses (see `Shared-Transcript.md` for the streaming lifecycle), `LLMClient` provides a streaming variant:
+
+```swift
+let stream: AsyncThrowingStream<String, Error> = try await client.stream(request)
+```
+
+- `stream(request:)` returns an `AsyncThrowingStream<String, Error>` that yields text chunks as they arrive.
+- The `ResponseRequest` must include `StreamingEnabled()` in its config block to signal the server.
+- Error handling: if the stream fails mid-flight, the error is thrown from the `for try await` loop. Partial results are lost — agents must not retry mid-stream (see `StreamingChatAgent` spec).
+- Token counts and response metadata are not available per-chunk. Agents that need token counts should extract them from a summary event at the end of the stream, or estimate from accumulated text length.
+
+If `SwiftOpenResponsesDSL.LLMClient` does not yet expose `stream(request:)`, the agent spec should note this as a dependency and use `send(request:)` as a fallback (non-streaming) until the method is available.
+
+---
+
+## AgentLLMClient Protocol
+
+For agents that support both on-device and cloud inference, the `AgentLLMClient` protocol provides a unified interface. See `Shared-Foundation-Models.md` for the full protocol definition, `AgentRequest`/`AgentResponse` types, and the `HybridLLMClient` fallback pattern.
+
+`LLMClient` conforms to `AgentLLMClient` via an extension that bridges `AgentRequest` → `ResponseRequest` and `ResponseObject` → `AgentResponse`.
+
+---
+
+## Endpoint requirement (cloud path)
+
+When using the cloud path (`.cloud` or `.hybrid` execution mode), agents must communicate with Open Responses API-compatible endpoints only (path `/v1/responses`). Chat Completions endpoints (`/v1/chat/completions`) are not supported.

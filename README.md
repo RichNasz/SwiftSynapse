@@ -61,6 +61,9 @@ open Package.swift
 **3. Run an agent from the CLI**
 
 ```bash
+# Minimal echo agent (no LLM needed)
+swift run simple-echo "Hello, SwiftSynapse!"
+
 # Plain LLM reply
 swift run llm-chat "What is the capital of France?" \
     --server-url http://127.0.0.1:1234/v1/responses \
@@ -71,6 +74,21 @@ swift run llm-chat-personas "Explain black holes." \
     --server-url http://127.0.0.1:1234/v1/responses \
     --model llama3 \
     --persona pirate
+
+# Streaming response (token-by-token)
+swift run streaming-chat-agent "Tell me a joke." \
+    --server-url http://127.0.0.1:1234/v1/responses \
+    --model llama3
+
+# LLM with retry on transient failures
+swift run retrying-llm-chat-agent "Hello!" \
+    --server-url http://127.0.0.1:1234/v1/responses \
+    --model llama3 --max-retries 5
+
+# Tool-using agent (math + unit conversion)
+swift run tool-using-agent "Convert 100 miles to kilometers" \
+    --server-url http://127.0.0.1:1234/v1/responses \
+    --model llama3
 ```
 
 **4. Or invoke an agent in code**
@@ -131,9 +149,12 @@ SwiftSynapse ships runnable agents today, with larger showcase agents in progres
 
 | Agent | Description | Key Patterns Demonstrated |
 |---|---|---|
-| [SimpleEcho](./Agents/SimpleEcho/specs/SPEC.md) | Echoes a goal string back with a prefix — the minimal `@SpecDrivenAgent` reference | `@SpecDrivenAgent` macro, transcript, status lifecycle |
-| [LLMChat](./Agents/LLMChat/specs/SPEC.md) | Forwards a prompt to any Open Responses API-compatible endpoint and returns the reply | `LLMClient`, `ResponseRequest` DSL, `RequestTimeout`, error handling |
-| [LLMChatPersonas](./Agents/LLMChatPersonas/specs/SPEC.md) | Two-step pipeline: plain LLM response followed by an optional persona rewrite using conversation threading | Two-call pipeline, `PreviousResponseId` threading, dual CLI output |
+| [SimpleEcho](./Agents/SimpleEcho/README.md) | Echoes a goal string back with a prefix — the minimal `@SpecDrivenAgent` reference | `@SpecDrivenAgent` macro, transcript, status lifecycle |
+| [LLMChat](./Agents/LLMChat/README.md) | Forwards a prompt to any Open Responses API-compatible endpoint and returns the reply | `LLMClient`, `ResponseRequest` DSL, `RequestTimeout`, error handling |
+| [LLMChatPersonas](./Agents/LLMChatPersonas/README.md) | Two-step pipeline: plain LLM response followed by an optional persona rewrite using conversation threading | Two-call pipeline, `PreviousResponseId` threading, dual CLI output |
+| [RetryingLLMChatAgent](./Agents/RetryingLLMChatAgent/README.md) | LLM chat with exponential-backoff retry on transient failures | `retryWithBackoff`, retryable error classification, retry transcript annotations |
+| [StreamingChatAgent](./Agents/StreamingChatAgent/README.md) | Streams LLM responses token-by-token with real-time transcript updates | `LLMClient.stream()`, `StreamEvent`, `setStreaming`/`appendDelta` lifecycle |
+| [ToolUsingAgent](./Agents/ToolUsingAgent/README.md) | Dispatches LLM-chosen tool calls for math and unit conversion | `FunctionToolParam`, tool dispatch loop, `FunctionOutput`, `PreviousResponseId` |
 
 ### Showcase agents (in progress)
 

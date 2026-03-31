@@ -77,5 +77,68 @@ let package = Package(
             dependencies: ["LLMChatPersonasAgent"],
             path: "Agents/LLMChatPersonas/Tests"
         ),
+        .target(
+            name: "RetryingLLMChatAgentAgent",
+            dependencies: [
+                .product(name: "SwiftSynapseMacrosClient", package: "SwiftSynapseMacros"),
+                .product(name: "SwiftOpenResponsesDSL", package: "SwiftOpenResponsesDSL"),
+            ],
+            path: "Agents/RetryingLLMChatAgent/Sources"
+        ),
+        .executableTarget(
+            name: "retrying-llm-chat-agent",
+            dependencies: [
+                "RetryingLLMChatAgentAgent",
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ],
+            path: "Agents/RetryingLLMChatAgent/CLI"
+        ),
+        .testTarget(
+            name: "RetryingLLMChatAgentTests",
+            dependencies: ["RetryingLLMChatAgentAgent"],
+            path: "Agents/RetryingLLMChatAgent/Tests"
+        ),
+        .target(
+            name: "StreamingChatAgentAgent",
+            dependencies: [
+                .product(name: "SwiftSynapseMacrosClient", package: "SwiftSynapseMacros"),
+                .product(name: "SwiftOpenResponsesDSL", package: "SwiftOpenResponsesDSL"),
+            ],
+            path: "Agents/StreamingChatAgent/Sources"
+        ),
+        .executableTarget(
+            name: "streaming-chat-agent",
+            dependencies: [
+                "StreamingChatAgentAgent",
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ],
+            path: "Agents/StreamingChatAgent/CLI"
+        ),
+        .testTarget(
+            name: "StreamingChatAgentTests",
+            dependencies: ["StreamingChatAgentAgent"],
+            path: "Agents/StreamingChatAgent/Tests"
+        ),
+        .target(
+            name: "ToolUsingAgentAgent",
+            dependencies: [
+                .product(name: "SwiftSynapseMacrosClient", package: "SwiftSynapseMacros"),
+                .product(name: "SwiftOpenResponsesDSL", package: "SwiftOpenResponsesDSL"),
+            ],
+            path: "Agents/ToolUsingAgent/Sources"
+        ),
+        .executableTarget(
+            name: "tool-using-agent",
+            dependencies: [
+                "ToolUsingAgentAgent",
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ],
+            path: "Agents/ToolUsingAgent/CLI"
+        ),
+        .testTarget(
+            name: "ToolUsingAgentTests",
+            dependencies: ["ToolUsingAgentAgent"],
+            path: "Agents/ToolUsingAgent/Tests"
+        ),
     ]
 )

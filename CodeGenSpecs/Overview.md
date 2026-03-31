@@ -19,6 +19,13 @@ Each file in `CodeGenSpecs/` defines a **shared concern** — a cross-cutting pa
 | `Shared-LLM-Client.md` | The shared LLM client protocol and injection pattern |
 | `Shared-Tool-Registry.md` | How tools are registered, discovered, and dispatched |
 | `Shared-Transcript.md` | The canonical transcript model (`ObservableTranscript`, `TranscriptEntry`) and streaming protocol |
+| `Shared-Foundation-Models.md` | On-device inference via Foundation Models framework, `AgentLLMClient` protocol, hybrid fallback |
+| `Shared-Error-Strategy.md` | Error enum conventions, categorization, status-before-throw invariant |
+| `Shared-Retry-Strategy.md` | Exponential backoff retry wrapper for LLM calls |
+| `Shared-Configuration.md` | `AgentConfiguration` shared value type with layered resolution |
+| `Shared-Tool-Concurrency.md` | Tool scheduling, concurrency safety, result budgeting |
+| `Shared-Telemetry.md` | Opt-in telemetry events and `TelemetrySink` protocol |
+| `Shared-Session-Resume.md` | `AgentSession` snapshot and `resume(from:)` contract |
 | `README-Generation.md` | Rules for generating the top-level `README.md` |
 | `Agent-README-Generation.md` | Rules for generating per-agent `README.md` files |
 
@@ -53,6 +60,8 @@ The macro generates these members on every agent actor:
 | `transcript` | `ObservableTranscript` | Public read-only accessor |
 | `client` | `LLMClient` | Public accessor (fatalError if not configured) |
 | `configure(client:)` | method | Inject an LLM client |
+| `_telemetrySink` | `(any TelemetrySink)?` | Optional weak telemetry sink (see `Shared-Telemetry.md`) |
+| `configure(telemetry:)` | method | Inject a telemetry sink |
 | `run(goal:)` | `async throws` | Generic runtime loop via `AgentRuntime` |
 
 Agent-specific logic should be placed in a custom `execute(goal:)` method (or similar), which accesses `_status` and `_transcript` directly.
@@ -75,3 +84,4 @@ Agent-specific logic should be placed in a custom `execute(goal:)` method (or si
 - Tool schemas are generated from `@LLMTool` macros (SwiftLLMToolMacros).
 - Responses are constructed via `SwiftOpenResponsesDSL`.
 - No `import` of third-party AI frameworks is allowed in generated files.
+- `import FoundationModels` is allowed inside `#if canImport(FoundationModels)` guards for on-device inference (see `Shared-Foundation-Models.md`).

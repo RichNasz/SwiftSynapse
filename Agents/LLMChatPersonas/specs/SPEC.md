@@ -29,11 +29,11 @@ URL validation occurs at init time; throws `LLMChatPersonasError.invalidServerUR
 
 ## Tasks
 
-1. Validate `goal` is non-empty; set status `.failed` and throw `LLMChatPersonasError.emptyGoal` if empty.
+1. Validate `goal` is non-empty; set status `.error(LLMChatPersonasError.emptyGoal)` and throw if empty.
 2. Set status to `.running`; append a `.userMessage(goal)` transcript entry.
 3. Build a `ResponseRequest` with `RequestTimeout(300)` and `ResourceTimeout(300)` in the config block, and `User(goal)` as input.
 4. Call `try await _llmClient.send(request)`; extract text via `response.firstOutputText`.
-5. Guard non-empty result → `.failed` + throw `LLMChatPersonasError.noResponseContent`.
+5. Guard non-empty result → `.error(LLMChatPersonasError.noResponseContent)` + throw.
 6. Append `.assistantMessage(initialResponse)` transcript entry.
 7. **If `persona` is `nil`**: set status `.completed`; return `initialResponse`.
 8. Capture `firstResponseId = firstResponse.id` from the first response.
@@ -43,7 +43,7 @@ URL validation occurs at init time; throws `LLMChatPersonasError.invalidServerUR
    ```
 10. Append `.userMessage(personaPrompt)` transcript entry.
 11. Build + send a second `ResponseRequest` that includes `PreviousResponseId(firstResponseId)` in its config block to thread the conversation, with the short persona prompt as input.
-12. Extract text via `response.firstOutputText`; guard non-empty → `.failed` + throw `LLMChatPersonasError.noPersonaResponseContent`.
+12. Extract text via `response.firstOutputText`; guard non-empty → `.error(LLMChatPersonasError.noPersonaResponseContent)` + throw.
 13. Append `.assistantMessage(personaResponse)`; set status `.completed`; return `personaResponse`.
 
 ---
