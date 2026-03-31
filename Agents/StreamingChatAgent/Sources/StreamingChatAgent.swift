@@ -12,11 +12,11 @@ public enum StreamingChatAgentError: Error, Sendable {
 @SpecDrivenAgent
 public actor StreamingChatAgent {
     private let config: AgentConfiguration
-    private let _llmClient: LLMClient
 
     public init(configuration: AgentConfiguration) throws {
         self.config = configuration
-        self._llmClient = try configuration.buildLLMClient()
+        // Validate that a client can be built (fail-fast on bad config)
+        _ = try configuration.buildLLMClient()
     }
 
     /// Legacy convenience init for backward compatibility.
@@ -35,23 +35,17 @@ public actor StreamingChatAgent {
         _transcript.reset()
         _transcript.append(.userMessage(goal))
 
-        let timeout = TimeInterval(config.timeoutSeconds)
-        let request = try ResponseRequest(model: config.modelName, stream: true) {
-            try RequestTimeout(timeout)
-            try ResourceTimeout(timeout)
-        } input: {
-            User(goal)
-        }
+        let client = try config.buildLLMClient()
+        let agent = Agent(client: client, model: config.modelName)
 
-        try Task.checkCancellation()
-
-        let stream = _llmClient.stream(request)
+        let stream = await agent.stream(goal)
         _transcript.setStreaming(true)
         var accumulated = ""
 
         do {
             for try await event in stream {
-                if case .contentPartDelta(let delta, _, _) = event {
+                if case .llm(let llmEvent) = event,
+                   case .contentPartDelta(let delta, _, _) = llmEvent {
                     accumulated += delta
                     _transcript.appendDelta(delta)
                 }

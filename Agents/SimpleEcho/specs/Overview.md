@@ -24,8 +24,8 @@ No additional files are needed — this agent has no tools, no background execut
 
 ## Shared Types Used
 
-- `@SpecDrivenAgent` macro — generates `_status`, `_transcript`, `status`, `transcript`, `run(goal:)`
-- `AgentStatus` — `.idle`, `.running`, `.error(Error)`, `.completed(Any)`
+- `@SpecDrivenAgent` macro — generates `_status`, `_transcript`, `status`, `transcript`
+- `AgentStatus` — `.idle`, `.running`, `.error(Error)`, `.completed(String)`
 - `ObservableTranscript` — `@Observable` class with `entries`, `append()`, `reset()`
 
 No `AgentConfiguration`, `LLMClient`, or `retryWithBackoff` — this agent never calls an LLM.

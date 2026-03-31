@@ -20,10 +20,10 @@
 
 ## Shared Types Used
 
-- `AgentConfiguration` — centralized config with validation; replaces inline URL validation
+- `AgentConfiguration` — centralized config with validation
+- `Agent` — from SwiftOpenResponsesDSL; handles LLM communication and transcript
 - `retryWithBackoff` — shared free function for transient error retry
-- `@SpecDrivenAgent` macro — generates `_status`, `_transcript`, `status`, `transcript`, `run(goal:)`
-- `LLMClient` — via `config.buildLLMClient()`
+- `@SpecDrivenAgent` macro — generates `_status`, `_transcript`, `status`, `transcript`
 
 ---
 
@@ -32,18 +32,16 @@
 Macro-generated defaults:
 - `_status: AgentStatus` (macro-managed)
 - `_transcript: ObservableTranscript` (macro-managed)
-- `_client: LLMClient?` (macro-managed, unused — agent uses its own `_llmClient`)
 
 Custom stored properties:
 - `config: AgentConfiguration` — centralized configuration
-- `_llmClient: LLMClient` — built from `config.buildLLMClient()`
 
 ---
 
 ## Init rules
 
 1. Primary init takes `AgentConfiguration` (already validated).
-2. `_llmClient = try configuration.buildLLMClient()`.
+2. Validates client can be built via `configuration.buildLLMClient()` (fail-fast).
 3. Legacy convenience init `(serverURL:modelName:apiKey:)` creates an `AgentConfiguration` and delegates.
 
 ---
@@ -51,11 +49,12 @@ Custom stored properties:
 ## execute() rules
 
 1. Guard non-empty goal → `.error(LLMChatError.emptyGoal)` + throw.
-2. `_status = .running`; `_transcript.reset()`; append `.userMessage(goal)`.
-3. Build `ResponseRequest` with `config.modelName` and `TimeInterval(config.timeoutSeconds)`.
-4. Call `retryWithBackoff(maxAttempts: config.maxRetries)` wrapping `_llmClient.send(request)`.
-5. Guard non-empty response → `.error(LLMChatError.noResponseContent)` + throw.
-6. Append `.assistantMessage(responseText)`; `_status = .completed(responseText)`; return text.
+2. `_status = .running`; `_transcript.reset()`.
+3. Create `Agent(client:model:)` from config.
+4. Call `retryWithBackoff(maxAttempts: config.maxRetries)` wrapping `agent.send(goal)`, calling `agent.reset()` before each attempt.
+5. Guard non-empty result → `.error(LLMChatError.noResponseContent)` + throw.
+6. Sync transcript from Agent via `_transcript.sync(from: agent.transcript)`.
+7. `_status = .completed(result)`; return text.
 
 ---
 

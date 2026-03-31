@@ -12,11 +12,11 @@ public enum RetryingLLMChatAgentError: Error, Sendable {
 @SpecDrivenAgent
 public actor RetryingLLMChatAgent {
     private let config: AgentConfiguration
-    private let _llmClient: LLMClient
 
     public init(configuration: AgentConfiguration) throws {
         self.config = configuration
-        self._llmClient = try configuration.buildLLMClient()
+        // Validate that a client can be built (fail-fast on bad config)
+        _ = try configuration.buildLLMClient()
     }
 
     /// Legacy convenience init for backward compatibility.
@@ -33,38 +33,28 @@ public actor RetryingLLMChatAgent {
 
         _status = .running
         _transcript.reset()
-        _transcript.append(.userMessage(goal))
 
-        let timeout = TimeInterval(config.timeoutSeconds)
-        let request = try ResponseRequest(model: config.modelName) {
-            try RequestTimeout(timeout)
-            try ResourceTimeout(timeout)
-        } input: {
-            User(goal)
-        }
+        let client = try config.buildLLMClient()
+        let agent = Agent(client: client, model: config.modelName)
 
-        try Task.checkCancellation()
-
-        let response: ResponseObject
+        let result: String
         do {
-            let capturedClient = _llmClient
-            response = try await retryWithBackoff(maxAttempts: config.maxRetries) {
-                try await capturedClient.send(request)
+            result = try await retryWithBackoff(maxAttempts: config.maxRetries) {
+                await agent.reset()
+                return try await agent.send(goal)
             }
         } catch {
             _status = .error(error)
             throw error
         }
 
-        let responseText = response.firstOutputText ?? ""
-
-        guard !responseText.isEmpty else {
+        guard !result.isEmpty else {
             _status = .error(RetryingLLMChatAgentError.noResponseContent)
             throw RetryingLLMChatAgentError.noResponseContent
         }
 
-        _transcript.append(.assistantMessage(responseText))
-        _status = .completed(responseText)
-        return responseText
+        _transcript.sync(from: await agent.transcript)
+        _status = .completed(result)
+        return result
     }
 }

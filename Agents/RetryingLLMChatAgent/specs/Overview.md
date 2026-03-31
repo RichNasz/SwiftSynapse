@@ -17,9 +17,9 @@
 ## Shared Types Used
 
 - `AgentConfiguration` — centralized config with `maxRetries` validation (1–10)
-- `retryWithBackoff` — **shared free function** from SwiftSynapseMacrosClient; replaces the 42-line private method that was previously duplicated in this agent and ToolUsingAgent
-- `@SpecDrivenAgent` macro — generates `_status`, `_transcript`, `status`, `transcript`, `run(goal:)`
-- `LLMClient` — via `config.buildLLMClient()`
+- `Agent` — from SwiftOpenResponsesDSL; handles LLM communication and transcript
+- `retryWithBackoff` — **shared free function** from SwiftSynapseMacrosClient
+- `@SpecDrivenAgent` macro — generates `_status`, `_transcript`, `status`, `transcript`
 - `AgentConfigurationError` — replaces per-agent `invalidServerURL` and `invalidConfiguration` cases
 
 ---
@@ -28,7 +28,7 @@
 
 1. `Shared-Configuration.md` — `AgentConfiguration` init; `maxRetries` field is critical
 2. `Shared-Retry-Strategy.md` — **this is the primary pattern** for this agent; uses shared `retryWithBackoff` free function
-3. `Shared-Transcript.md` — entry payloads
+3. `Shared-Transcript.md` — transcript synced from Agent via `_transcript.sync(from:)`
 4. `Shared-Error-Strategy.md` — error enum (top-level), status-before-throw invariant
 
 Do NOT apply:
@@ -43,7 +43,6 @@ Do NOT apply:
 @SpecDrivenAgent
 public actor RetryingLLMChatAgent {
     private let config: AgentConfiguration
-    private let _llmClient: LLMClient
 }
 ```
 
@@ -52,7 +51,7 @@ public actor RetryingLLMChatAgent {
 ## Init Rules
 
 1. Primary init takes `AgentConfiguration` (already validated, including `maxRetries` 1–10).
-2. `_llmClient = try configuration.buildLLMClient()`.
+2. Validates client can be built via `configuration.buildLLMClient()` (fail-fast).
 3. Legacy convenience init `(serverURL:modelName:apiKey:maxRetries:)` creates an `AgentConfiguration` and delegates.
 
 ---
@@ -60,11 +59,11 @@ public actor RetryingLLMChatAgent {
 ## execute() Rules
 
 1. Guard non-empty goal → `.emptyGoal` error.
-2. `_status = .running`; `_transcript.reset()`; append `.userMessage(goal)`.
-3. Build `ResponseRequest` with `config.modelName` and `TimeInterval(config.timeoutSeconds)`.
-4. Call shared `retryWithBackoff(maxAttempts: config.maxRetries)` wrapping `_llmClient.send(request)`.
-5. Guard non-empty response → `.noResponseContent` error.
-6. Append `.assistantMessage(text)`; `_status = .completed(text)`; return.
+2. `_status = .running`; `_transcript.reset()`.
+3. Create `Agent(client:model:)` from config.
+4. Call shared `retryWithBackoff(maxAttempts: config.maxRetries)` wrapping `agent.send(goal)`, calling `agent.reset()` before each attempt.
+5. Guard non-empty result → `.noResponseContent` error.
+6. Sync transcript from Agent; `_status = .completed(result)`; return.
 
 ---
 

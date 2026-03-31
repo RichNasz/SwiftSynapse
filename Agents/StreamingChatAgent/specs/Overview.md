@@ -16,9 +16,9 @@
 
 ## Shared Types Used
 
-- `AgentConfiguration` — centralized config with validation; replaces inline URL validation
-- `@SpecDrivenAgent` macro — generates `_status`, `_transcript`, `status`, `transcript`, `run(goal:)`
-- `LLMClient` — via `config.buildLLMClient()`
+- `AgentConfiguration` — centralized config with validation
+- `Agent` — from SwiftOpenResponsesDSL; `agent.stream()` returns `AsyncThrowingStream<ToolSessionEvent, Error>`
+- `@SpecDrivenAgent` macro — generates `_status`, `_transcript`, `status`, `transcript`
 - `AgentConfigurationError` — replaces per-agent `invalidServerURL` case
 
 No `retryWithBackoff` — streaming calls are not retried (see SPEC.md).
@@ -44,7 +44,6 @@ Do NOT apply:
 @SpecDrivenAgent
 public actor StreamingChatAgent {
     private let config: AgentConfiguration
-    private let _llmClient: LLMClient
 }
 ```
 
@@ -53,7 +52,7 @@ public actor StreamingChatAgent {
 ## Init Rules
 
 1. Primary init takes `AgentConfiguration` (already validated).
-2. `_llmClient = try configuration.buildLLMClient()`.
+2. Validates client can be built via `configuration.buildLLMClient()` (fail-fast).
 3. Legacy convenience init `(serverURL:modelName:apiKey:)` creates an `AgentConfiguration` and delegates.
 
 ---
@@ -62,9 +61,9 @@ public actor StreamingChatAgent {
 
 1. Guard non-empty goal → `.emptyGoal` error.
 2. `_status = .running`; `_transcript.reset()`; append `.userMessage(goal)`.
-3. Build `ResponseRequest` with `stream: true`, `config.modelName`, `TimeInterval(config.timeoutSeconds)`.
-4. `let stream = _llmClient.stream(request)`.
-5. `_transcript.setStreaming(true)`; iterate chunks with `appendDelta()`.
+3. Create `Agent(client:model:)` from config.
+4. `let stream = await agent.stream(goal)`.
+5. `_transcript.setStreaming(true)`; iterate events with pattern matching on `.llm(.contentPartDelta(...))`, calling `appendDelta()`.
 6. **Critical:** `setStreaming(false)` in catch block must come before `_status = .error(...)`.
 7. Guard non-empty accumulated → `.noResponseContent` error.
 8. Append `.assistantMessage(accumulated)`; `_status = .completed(accumulated)`; return.

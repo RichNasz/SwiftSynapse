@@ -13,7 +13,7 @@ Skills-aware LLM agent with agentskills.io integration.
 - `SkillStore` — agentskills.io skill discovery from filesystem
 - `SkillsAgent` — agent wrapper that registers `activate_skill` tool and injects skill catalog
 - `Skills` — builder-pattern component for SkillsAgent init
-- `@SpecDrivenAgent` macro — generates `_status`, `_transcript`, `status`, `transcript`, `run(goal:)`
+- `@SpecDrivenAgent` macro — generates `_status`, `_transcript`, `status`, `transcript`
 
 ## Architecture
 This agent demonstrates the full harness. The `execute(goal:)` method:

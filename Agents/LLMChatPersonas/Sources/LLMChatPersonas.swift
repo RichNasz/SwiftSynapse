@@ -13,12 +13,12 @@ public enum LLMChatPersonasError: Error, Sendable {
 @SpecDrivenAgent
 public actor LLMChatPersonas {
     private let config: AgentConfiguration
-    private let _llmClient: LLMClient
     public private(set) var lastInitialResponse: String?
 
     public init(configuration: AgentConfiguration) throws {
         self.config = configuration
-        self._llmClient = try configuration.buildLLMClient()
+        // Validate that a client can be built (fail-fast on bad config)
+        _ = try configuration.buildLLMClient()
     }
 
     /// Legacy convenience init for backward compatibility.
@@ -34,29 +34,21 @@ public actor LLMChatPersonas {
         }
         _status = .running
         _transcript.reset()
-        _transcript.append(.userMessage(goal))
 
-        let timeout = TimeInterval(config.timeoutSeconds)
-        let firstRequest = try ResponseRequest(model: config.modelName) {
-            try RequestTimeout(timeout)
-            try ResourceTimeout(timeout)
-        } input: {
-            User(goal)
-        }
+        let client = try config.buildLLMClient()
+        let agent = Agent(client: client, model: config.modelName)
 
-        let firstResponse: ResponseObject
+        // First call: get initial response
+        let initialResponse: String
         do {
-            let capturedClient = _llmClient
-            firstResponse = try await retryWithBackoff(maxAttempts: config.maxRetries) {
-                try await capturedClient.send(firstRequest)
+            initialResponse = try await retryWithBackoff(maxAttempts: config.maxRetries) {
+                await agent.reset()
+                return try await agent.send(goal)
             }
         } catch {
             _status = .error(error)
             throw error
         }
-
-        let firstResponseId = firstResponse.id
-        let initialResponse = firstResponse.firstOutputText ?? ""
 
         guard !initialResponse.isEmpty else {
             _status = .error(LLMChatPersonasError.noResponseContent)
@@ -64,43 +56,31 @@ public actor LLMChatPersonas {
         }
 
         lastInitialResponse = initialResponse
-        _transcript.append(.assistantMessage(initialResponse))
 
         guard let persona else {
+            _transcript.sync(from: await agent.transcript)
             _status = .completed(initialResponse)
             return initialResponse
         }
 
+        // Second call: persona rewrite (chains via Agent's lastResponseId)
         let personaPrompt = "Rewrite your previous response in the style and voice of \(persona). Preserve all factual content but express it exactly as \(persona) would speak."
-        _transcript.append(.userMessage(personaPrompt))
-
-        let secondRequest = try ResponseRequest(model: config.modelName) {
-            try RequestTimeout(timeout)
-            try ResourceTimeout(timeout)
-            try PreviousResponseId(firstResponseId)
-        } input: {
-            User(personaPrompt)
-        }
-
-        let secondResponse: ResponseObject
+        let personaResponse: String
         do {
-            let capturedClient = _llmClient
-            secondResponse = try await retryWithBackoff(maxAttempts: config.maxRetries) {
-                try await capturedClient.send(secondRequest)
-            }
+            personaResponse = try await agent.send(personaPrompt)
         } catch {
+            _transcript.sync(from: await agent.transcript)
             _status = .error(error)
             throw error
         }
 
-        let personaResponse = secondResponse.firstOutputText ?? ""
-
         guard !personaResponse.isEmpty else {
+            _transcript.sync(from: await agent.transcript)
             _status = .error(LLMChatPersonasError.noPersonaResponseContent)
             throw LLMChatPersonasError.noPersonaResponseContent
         }
 
-        _transcript.append(.assistantMessage(personaResponse))
+        _transcript.sync(from: await agent.transcript)
         _status = .completed(personaResponse)
         return personaResponse
     }

@@ -15,13 +15,11 @@ public enum ToolUsingAgentError: Error, Sendable {
 @SpecDrivenAgent
 public actor ToolUsingAgent {
     private let config: AgentConfiguration
-    private let _llmClient: LLMClient
 
     private static let maxToolIterations = 10
 
     public init(configuration: AgentConfiguration) throws {
         self.config = configuration
-        self._llmClient = try configuration.buildLLMClient()
     }
 
     /// Legacy convenience init for backward compatibility.
@@ -38,95 +36,38 @@ public actor ToolUsingAgent {
 
         _status = .running
         _transcript.reset()
-        _transcript.append(.userMessage(goal))
 
+        let client = try config.buildLLMClient()
         let toolDefs = Self.toolDefinitions()
-        let timeout = TimeInterval(config.timeoutSeconds)
-
-        var request = try ResponseRequest(model: config.modelName) {
-            try RequestTimeout(timeout)
-            try ResourceTimeout(timeout)
-        } input: {
-            User(goal)
-        }
-        request.tools = toolDefs
-
-        var iteration = 0
-        while iteration <= Self.maxToolIterations {
-            try Task.checkCancellation()
-
-            let response: ResponseObject
-            do {
-                let currentRequest = request
-                let capturedClient = _llmClient
-                response = try await retryWithBackoff(maxAttempts: config.maxRetries) {
-                    try await capturedClient.send(currentRequest)
-                }
-            } catch {
-                _status = .error(error)
-                throw error
-            }
-
-            guard response.requiresToolExecution,
-                  let functionCalls = response.firstFunctionCalls else {
-                let responseText = response.firstOutputText ?? ""
-                guard !responseText.isEmpty else {
-                    _status = .error(ToolUsingAgentError.noResponseContent)
-                    throw ToolUsingAgentError.noResponseContent
-                }
-                _transcript.append(.assistantMessage(responseText))
-                _status = .completed(responseText)
-                return responseText
-            }
-
-            iteration += 1
-            guard iteration <= Self.maxToolIterations else {
-                _status = .error(ToolUsingAgentError.toolLoopExceeded)
-                throw ToolUsingAgentError.toolLoopExceeded
-            }
-
-            // Log all tool calls
-            for call in functionCalls {
-                _transcript.append(.toolCall(name: call.name, arguments: call.arguments))
-            }
-
-            // Execute via ToolExecutor (all tools are concurrency-safe pure functions)
-            let toolCalls = functionCalls.enumerated().map { (i, call) in
-                ToolExecutor.ToolCall(name: call.name, arguments: call.arguments, index: i)
-            }
-            let executor = ToolExecutor()
-            let results: [ToolExecutor.ToolResult]
-            do {
-                results = try await executor.execute(calls: toolCalls) { name, arguments in
-                    try Self.dispatchTool(name: name, arguments: arguments)
-                }
-            } catch {
-                _status = .error(error)
-                throw error
-            }
-
-            // Log results and build outputs
-            var toolOutputs: [InputItem] = []
-            for result in results {
-                _transcript.append(.toolResult(name: result.name, result: result.result, duration: result.duration))
-                toolOutputs.append(FunctionOutput(callId: functionCalls[result.index].callId, output: result.result))
-            }
-
-            let previousId = response.id
-            request = try ResponseRequest(
-                model: config.modelName,
-                config: {
-                    try RequestTimeout(timeout)
-                    try ResourceTimeout(timeout)
-                    try PreviousResponseId(previousId)
-                },
-                input: toolOutputs
-            )
-            request.tools = toolDefs
+        let agent = try Agent(
+            client: client,
+            model: config.modelName,
+            maxToolIterations: Self.maxToolIterations
+        ) {
+            AgentTool(tool: toolDefs[0]) { args in try Self.dispatchTool(name: "calculate", arguments: args) }
+            AgentTool(tool: toolDefs[1]) { args in try Self.dispatchTool(name: "convertUnit", arguments: args) }
+            AgentTool(tool: toolDefs[2]) { args in try Self.dispatchTool(name: "formatNumber", arguments: args) }
         }
 
-        _status = .error(ToolUsingAgentError.toolLoopExceeded)
-        throw ToolUsingAgentError.toolLoopExceeded
+        let result: String
+        do {
+            result = try await retryWithBackoff(maxAttempts: config.maxRetries) {
+                await agent.reset()
+                return try await agent.send(goal)
+            }
+        } catch {
+            _status = .error(error)
+            throw error
+        }
+
+        guard !result.isEmpty else {
+            _status = .error(ToolUsingAgentError.noResponseContent)
+            throw ToolUsingAgentError.noResponseContent
+        }
+
+        _transcript.sync(from: await agent.transcript)
+        _status = .completed(result)
+        return result
     }
 
     // MARK: - Tool Definitions

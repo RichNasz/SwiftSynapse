@@ -20,10 +20,10 @@
 
 ## Shared Types Used
 
-- `AgentConfiguration` — centralized config with validation; replaces inline URL validation
-- `retryWithBackoff` — shared free function for transient error retry (wraps both LLM calls)
-- `@SpecDrivenAgent` macro — generates `_status`, `_transcript`, `status`, `transcript`, `run(goal:)`
-- `LLMClient` — via `config.buildLLMClient()`
+- `AgentConfiguration` — centralized config with validation
+- `Agent` — from SwiftOpenResponsesDSL; handles LLM communication, conversation continuity via `lastResponseId`, and transcript
+- `retryWithBackoff` — shared free function for transient error retry (wraps first LLM call)
+- `@SpecDrivenAgent` macro — generates `_status`, `_transcript`, `status`, `transcript`
 
 ---
 
@@ -32,11 +32,9 @@
 Macro-generated defaults:
 - `_status: AgentStatus` (macro-managed)
 - `_transcript: ObservableTranscript` (macro-managed)
-- `_client: LLMClient?` (macro-managed, unused — agent uses its own `_llmClient`)
 
 Custom stored properties:
 - `config: AgentConfiguration` — centralized configuration
-- `_llmClient: LLMClient` — built from `config.buildLLMClient()`
 - `lastInitialResponse: String?` — stores the first LLM response for CLI display
 
 ---
@@ -44,7 +42,7 @@ Custom stored properties:
 ## Init rules
 
 1. Primary init takes `AgentConfiguration` (already validated).
-2. `_llmClient = try configuration.buildLLMClient()`.
+2. Validates client can be built via `configuration.buildLLMClient()` (fail-fast).
 3. Legacy convenience init `(serverURL:modelName:apiKey:)` creates an `AgentConfiguration` and delegates.
 
 ---
@@ -52,15 +50,15 @@ Custom stored properties:
 ## execute() rules
 
 1. Guard non-empty goal → `_status = .error(LLMChatPersonasError.emptyGoal)` + throw.
-2. `_status = .running`; `_transcript.reset()`; append `.userMessage(goal)`.
-3. First request with `retryWithBackoff`: `ResponseRequest(model: config.modelName)` with timeouts from config.
-4. Guard non-empty initial response → error + throw.
-5. Store `lastInitialResponse`; append `.assistantMessage(initialResponse)`.
-6. If `persona == nil`: `_status = .completed(initialResponse)`; return.
-7. Build persona prompt; append `.userMessage(personaPrompt)`.
-8. Second request with `retryWithBackoff` using `PreviousResponseId(firstResponseId)` for conversation threading.
+2. `_status = .running`; `_transcript.reset()`.
+3. Create `Agent(client:model:)` from config.
+4. First call with `retryWithBackoff`: `agent.send(goal)` with `agent.reset()` before each attempt.
+5. Guard non-empty initial response → error + throw.
+6. Store `lastInitialResponse`.
+7. If `persona == nil`: sync transcript, `_status = .completed(initialResponse)`; return.
+8. Second call: `agent.send(personaPrompt)` — Agent automatically chains via `lastResponseId` for conversation continuity.
 9. Guard non-empty persona response → error + throw.
-10. Append `.assistantMessage(personaResponse)`; `_status = .completed(personaResponse)`; return.
+10. Sync transcript from Agent; `_status = .completed(personaResponse)`; return.
 
 ---
 
