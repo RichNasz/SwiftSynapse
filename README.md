@@ -24,22 +24,22 @@
 
 SwiftSynapse is an open-source framework for building smart, autonomous AI agents natively in Swift — with no Python bridges, no heavy external runtimes, and no compromises on type safety or platform integration. Every agent is **observable**, **background-capable**, and **macro-powered**: reasoning steps, tool calls, and streaming output surface directly in SwiftUI with zero Combine plumbing.
 
-The framework provides a **shared agent harness** — `AgentConfiguration`, `retryWithBackoff`, `ToolExecutor`, `AgentLLMClient`, `AgentSession` — so building a new agent is ~30-50 lines of domain logic. Agents can discover and use [agentskills.io](https://agentskills.io) skills natively via **SwiftOpenSkills** integration.
+Agents delegate to [SwiftOpenResponsesDSL](https://github.com/RichNasz/SwiftOpenResponsesDSL)'s `Agent` actor for LLM communication, tool dispatch, and conversation continuity — so building a new agent is **~30 lines of domain logic**. Drop-in **SwiftUI components** from `SwiftSynapseUI` give you a complete chat interface, and **App Intents** integration enables Siri and Shortcuts support. On iOS 26+ / macOS 26+, agents run **on-device first** via Apple's Foundation Models framework with transparent cloud fallback.
 
-This project follows a strict **spec-driven development (SDD)** workflow: every `.swift` file is a generated artifact. Human authors write and refine Markdown specifications; Claude Code (or an equivalent AI agent) produces all implementation code from those specs. Generated files are never edited manually — to change behavior, update the spec and regenerate.
+This project follows a strict **spec-driven development (SDD)** workflow: every `.swift` file is a generated artifact. Human authors write and refine Markdown specifications; Claude Code produces all implementation code from those specs. Generated files are never edited manually — to change behavior, update the spec and regenerate.
 
 ---
 
 ## Key Features
 
-- **Shared Agent Harness** — `AgentConfiguration`, `retryWithBackoff`, `ToolExecutor`, `AgentLLMClient` eliminate boilerplate; new agents are ~30-50 lines
+- **Agent Delegation** — agents are thin wrappers (~30-60 lines) over `SwiftOpenResponsesDSL.Agent`, which handles tool dispatch loops, parallel execution, conversation continuity, and transcript management
+- **SwiftUI Components** — `TranscriptView`, `AgentStatusView`, `StreamingTextView`, `ToolCallDetailView`, and `AgentChatView` provide drop-in agent UIs via `SwiftSynapseUI`
 - **Spec-Driven Development** — every agent is defined by a `SPEC.md`; all Swift code is generated from it, never hand-written
 - **Observable Agents** — `@Observable` state exposes live transcript, tool calls, and reasoning steps directly to SwiftUI views via `ObservableTranscript`
+- **On-Device Priority** — Apple Foundation Models framework used first on iOS 26+ / macOS 26+ for full privacy; transparent cloud fallback via `HybridLLMClient`
 - **Skills Integration** — [agentskills.io](https://agentskills.io) standard supported natively via `SkillStore`, `SkillsAgent`, and `activate_skill` tool
 - **Type-Safe Tools** — `@LLMTool` macros generate JSON schemas at compile time; no stringly-typed dispatch, no runtime schema errors
-- **On-Device Priority** — Apple Foundation Models framework used first on iOS 26+ / macOS 26+ / visionOS 2.4+ for full privacy
-- **Hybrid Cloud Fallback** — transparent fallback to any OpenAI-compatible endpoint via `AgentLLMClient` when needed
-- **Environment Configuration** — set `SWIFTSYNAPSE_SERVER_URL`, `SWIFTSYNAPSE_MODEL`, `SWIFTSYNAPSE_API_KEY` once; all CLIs pick them up
+- **App Intents** — `AgentAppIntent` protocol exposes agents to Siri and Shortcuts with a single conformance
 - **Pure Swift** — zero external runtimes, no Python bridges; only Foundation and the SwiftSynapse libraries
 - **Apple-Native** — SwiftUI interfaces, `actor`-based agents, strict Swift 6.2+ concurrency throughout
 
@@ -68,7 +68,11 @@ export SWIFTSYNAPSE_MODEL=llama3
 # export SWIFTSYNAPSE_API_KEY=sk-...  # if needed
 ```
 
-**4. Run an agent from the CLI**
+**4. Run the AgentDashboard app**
+
+Select the `AgentDashboard` scheme in Xcode and run. Pick an agent from the sidebar, type a goal, and watch the transcript live.
+
+**5. Or run an agent from the CLI**
 
 ```bash
 # Minimal echo agent (no LLM needed)
@@ -95,7 +99,7 @@ swift run skills-enabled-agent "Help me with my task"
 
 All CLI options (`--server-url`, `--model`, `--api-key`) are optional when environment variables are set.
 
-**5. Or invoke an agent in code**
+**6. Or invoke an agent in code**
 
 ```swift
 import SwiftSynapseMacrosClient
@@ -120,6 +124,20 @@ let transcript = await agent.transcript   // ObservableTranscript
 let status = await agent.status           // AgentStatus
 ```
 
+**7. Or use SwiftSynapseUI for a complete chat interface**
+
+```swift
+import SwiftSynapseUI
+
+struct ContentView: View {
+    let agent: some ObservableAgent
+
+    var body: some View {
+        AgentChatView(agent: agent)
+    }
+}
+```
+
 ---
 
 ## Agent Examples
@@ -131,11 +149,11 @@ SwiftSynapse ships 7 runnable agents today. Every agent is fully spec-driven —
 | Agent | Description | Key Patterns Demonstrated |
 |---|---|---|
 | [SimpleEcho](./Agents/SimpleEcho/) | Echoes a goal string back with a prefix — the minimal `@SpecDrivenAgent` reference | `@SpecDrivenAgent` macro, transcript, status lifecycle |
-| [LLMChat](./Agents/LLMChat/) | Forwards a prompt to any Open Responses API-compatible endpoint and returns the reply | `AgentConfiguration`, `retryWithBackoff`, `LLMClient` |
-| [LLMChatPersonas](./Agents/LLMChatPersonas/) | Two-step pipeline: plain LLM response followed by an optional persona rewrite | Two-call pipeline, `PreviousResponseId` threading, `retryWithBackoff` |
-| [RetryingLLMChatAgent](./Agents/RetryingLLMChatAgent/) | LLM chat with exponential-backoff retry on transient failures | Shared `retryWithBackoff`, retryable error classification |
-| [StreamingChatAgent](./Agents/StreamingChatAgent/) | Streams LLM responses token-by-token with real-time transcript updates | `LLMClient.stream()`, `StreamEvent`, `setStreaming`/`appendDelta` lifecycle |
-| [ToolUsingAgent](./Agents/ToolUsingAgent/) | Dispatches LLM-chosen tool calls for math and unit conversion | `ToolExecutor`, tool dispatch loop, `FunctionOutput`, `PreviousResponseId` |
+| [LLMChat](./Agents/LLMChat/) | Forwards a prompt to any Open Responses API-compatible endpoint and returns the reply | `Agent` delegation, `retryWithBackoff`, transcript sync |
+| [LLMChatPersonas](./Agents/LLMChatPersonas/) | Two-step pipeline: plain LLM response followed by an optional persona rewrite | `Agent` conversation continuity via `lastResponseId`, two-call pipeline |
+| [RetryingLLMChatAgent](./Agents/RetryingLLMChatAgent/) | LLM chat with exponential-backoff retry on transient failures | Shared `retryWithBackoff`, `Agent` delegation |
+| [StreamingChatAgent](./Agents/StreamingChatAgent/) | Streams LLM responses token-by-token with real-time transcript updates | `Agent.stream()`, `ToolSessionEvent`, `setStreaming`/`appendDelta` lifecycle |
+| [ToolUsingAgent](./Agents/ToolUsingAgent/) | Dispatches LLM-chosen tool calls for math and unit conversion | `AgentTool` registration, `Agent` handles tool dispatch loop |
 | [SkillsEnabledAgent](./Agents/SkillsEnabledAgent/) | Discovers and activates agentskills.io skills from the filesystem | `SkillStore`, `SkillsAgent`, `activate_skill` tool, ~30 lines of domain logic |
 
 ### Showcase agents (in progress)
@@ -150,20 +168,11 @@ SwiftSynapse ships 7 runnable agents today. Every agent is fully spec-driven —
 
 ---
 
-## Shared Agent Harness
+## Architecture
 
-The harness provides shared types so agents stay lean. All types live in `SwiftSynapseMacrosClient`:
+### Agent Delegation Pattern
 
-| Type | Purpose |
-|---|---|
-| `AgentConfiguration` | Centralized config — validates URLs, model names, timeouts, retry counts. `fromEnvironment()` reads `SWIFTSYNAPSE_*` env vars. |
-| `retryWithBackoff` | Free async function — exponential backoff with `isTransportRetryable` predicate and `onRetry` callback |
-| `ToolExecutor` | Actor — schedules tool calls respecting `isConcurrencySafe`, returns results in receive order |
-| `AgentLLMClient` | Protocol — `send(_:)` / `stream(_:)` with `CloudLLMClient` and `HybridLLMClient` implementations |
-| `AgentSession` | Codable struct — session persistence with `CodableTranscriptEntry` bridge |
-| `AgentRuntime` | Static `execute()` — full tool dispatch loop with retry, transcript, and cancellation support |
-
-### Minimal agent with the harness
+Every agent is a thin wrapper over `SwiftOpenResponsesDSL.Agent`:
 
 ```swift
 import SwiftSynapseMacrosClient
@@ -171,74 +180,75 @@ import SwiftSynapseMacrosClient
 @SpecDrivenAgent
 public actor MyAgent {
     private let config: AgentConfiguration
-    private let _llmClient: LLMClient
 
     public init(configuration: AgentConfiguration) throws {
         self.config = configuration
-        self._llmClient = try configuration.buildLLMClient()
+        _ = try configuration.buildLLMClient()  // fail-fast validation
     }
 
     public func execute(goal: String) async throws -> String {
+        guard !goal.isEmpty else { throw MyAgentError.emptyGoal }
         _status = .running
         _transcript.reset()
-        _transcript.append(.userMessage(goal))
-
-        let timeout = TimeInterval(config.timeoutSeconds)
-        let request = try ResponseRequest(model: config.modelName) {
-            try RequestTimeout(timeout)
-            try ResourceTimeout(timeout)
-        } input: {
-            User(goal)
-        }
-
-        let capturedClient = _llmClient
-        let response = try await retryWithBackoff(maxAttempts: config.maxRetries) {
-            try await capturedClient.send(request)
-        }
-
-        let text = response.firstOutputText ?? ""
-        _transcript.append(.assistantMessage(text))
-        _status = .completed(text)
-        return text
-    }
-}
-```
-
-### Skills-enabled agent (~30 lines)
-
-```swift
-import SwiftSynapseMacrosClient
-
-@SpecDrivenAgent
-public actor MySkillsAgent {
-    private let config: AgentConfiguration
-    private let skillStore: SkillStore
-
-    public init(configuration: AgentConfiguration) throws {
-        self.config = configuration
-        self.skillStore = SkillStore()
-    }
-
-    public func execute(goal: String) async throws -> String {
-        _status = .running
-        _transcript.reset()
-        _transcript.append(.userMessage(goal))
-
-        let store = skillStore
-        try await store.load()
 
         let client = try config.buildLLMClient()
-        let agent = try await SkillsAgent(client: client, model: config.modelName) {
-            Skills(store: store)
-        }
+        let agent = Agent(client: client, model: config.modelName)
 
         let result = try await agent.send(goal)
-        _transcript.append(.assistantMessage(result))
+        _transcript.sync(from: await agent.transcript)
         _status = .completed(result)
         return result
     }
 }
 ```
+
+### With tools (~60 lines)
+
+```swift
+let agent = try Agent(client: client, model: config.modelName) {
+    AgentTool(tool: calculateDef) { args in try calculate(args) }
+    AgentTool(tool: convertDef)   { args in try convert(args) }
+}
+let result = try await agent.send(goal)
+// Agent handles the entire tool dispatch loop internally
+```
+
+### With skills (~30 lines)
+
+```swift
+let store = SkillStore()
+try await store.load()
+let agent = try await SkillsAgent(client: client, model: config.modelName) {
+    Skills(store: store)
+}
+let result = try await agent.send(goal)
+```
+
+### Shared Types
+
+| Type | Purpose |
+|---|---|
+| `AgentConfiguration` | Centralized config — validates URLs, model names, timeouts, retry counts. `fromEnvironment()` reads `SWIFTSYNAPSE_*` env vars. |
+| `retryWithBackoff` | Free async function — exponential backoff with `isTransportRetryable` predicate and `onRetry` callback |
+| `AgentLLMClient` | Protocol — `send(_:)` / `stream(_:)` with `CloudLLMClient` and `HybridLLMClient` (on-device + cloud fallback) implementations |
+| `AgentSession` | Codable struct — session persistence with `CodableTranscriptEntry` bridge |
+
+### SwiftSynapseUI Components
+
+| View | Purpose |
+|---|---|
+| `AgentChatView` | Complete drop-in chat UI: text input + transcript + status |
+| `TranscriptView` | Chat-style message list with auto-scroll and streaming support |
+| `AgentStatusView` | Status icon + label (idle/running/completed/error) |
+| `StreamingTextView` | Typing cursor animation during token-by-token streaming |
+| `ToolCallDetailView` | Expandable tool call row with JSON arguments, result, and duration |
+
+### Protocols
+
+| Protocol | Purpose |
+|---|---|
+| `ObservableAgent` | Common interface for all agents: `status`, `transcript`, `execute(goal:)` |
+| `AgentAppIntent` | Exposes any `ObservableAgent` as a Siri Shortcut / Shortcuts action |
 
 ---
 
@@ -282,6 +292,7 @@ SwiftSynapse is fully **AI-first**: no human writes implementation code. Every `
 | `Agents/<Name>/specs/SPEC.md` | Per-agent goal, inputs, tasks, tools, outputs | Human |
 | `Agents/<Name>/specs/Overview.md` | Agent-specific generation guidance | Human |
 | `Agents/<Name>/Sources/` | Generated Swift implementation | AI (never edit) |
+| `Apps/AgentDashboard/` | Example SwiftUI app | AI (never edit) |
 | `README.md` | This file | AI (never edit) |
 
 ---
@@ -305,6 +316,17 @@ targets: [
 ]
 ```
 
+For SwiftUI views and App Intents:
+
+```swift
+.target(
+    name: "YourApp",
+    dependencies: [
+        .product(name: "SwiftSynapseUI", package: "SwiftSynapseMacros"),
+    ]
+)
+```
+
 > `SwiftSynapseMacrosClient` re-exports `SwiftOpenResponsesDSL`, `SwiftLLMToolMacros`, and `SwiftOpenSkills`, so a single import is all most agent files need.
 
 > **Platform requirement:** On-device Foundation Models inference requires **iOS 26+**, **macOS 26+**, or **visionOS 2.4+** with Apple Intelligence enabled. For broader compatibility, point `AgentConfiguration` at any OpenAI-compatible cloud endpoint.
@@ -319,7 +341,7 @@ We welcome contributions — especially new agent specs, improvements to shared 
 
 1. Copy `Agents/TemplateAgent/` -> `Agents/<YourAgentName>/`
 2. Fill in `Agents/<YourAgentName>/specs/SPEC.md`
-3. Customize `Agents/<YourAgentName>/specs/Overview.md` — reference shared types (`AgentConfiguration`, `retryWithBackoff`, `ToolExecutor`) instead of inline implementations
+3. Customize `Agents/<YourAgentName>/specs/Overview.md` — delegate to `Agent` from SwiftOpenResponsesDSL, use `AgentConfiguration` and `retryWithBackoff`
 4. Run the generator (Claude Code) to produce `Sources/`, `CLI/`, and `Tests/` Swift files
 5. Build and run `swift test` to verify all tests pass
 6. Open a pull request containing spec files and generated output together
@@ -340,8 +362,8 @@ This project is released under the **MIT License** — use it, fork it, build on
 
 | Library | Purpose |
 |---|---|
-| [SwiftSynapseMacros](https://github.com/RichNasz/SwiftSynapseMacros) | Agent harness + macros — `@SpecDrivenAgent`, `AgentConfiguration`, `retryWithBackoff`, `ToolExecutor`, `AgentLLMClient` |
-| [SwiftOpenResponsesDSL](https://github.com/RichNasz/SwiftOpenResponsesDSL) | Base LLM communication layer — `ResponseRequest`, `LLMClient`, `ResponseObject` |
+| [SwiftSynapseMacros](https://github.com/RichNasz/SwiftSynapseMacros) | Agent harness + macros + SwiftUI components — `@SpecDrivenAgent`, `AgentConfiguration`, `retryWithBackoff`, `SwiftSynapseUI`, `AgentAppIntent` |
+| [SwiftOpenResponsesDSL](https://github.com/RichNasz/SwiftOpenResponsesDSL) | Base LLM communication layer — `Agent`, `ResponseRequest`, `LLMClient`, `AgentTool`, `ToolSession` |
 | [SwiftLLMToolMacros](https://github.com/RichNasz/SwiftLLMToolMacros) | Tool definition macros — `@LLMTool` / `@LLMToolArguments` generate `FunctionToolParam` schemas |
 | [SwiftOpenSkills](https://github.com/RichNasz/SwiftOpenSkills) | agentskills.io standard in Swift — `SkillStore`, `SkillsAgent`, skill discovery and activation |
 
