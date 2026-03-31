@@ -6,7 +6,6 @@ import SwiftSynapseMacrosClient
 
 public enum ToolUsingAgentError: Error, Sendable {
     case emptyGoal
-    case invalidServerURL
     case noResponseContent
     case toolCallFailed(String)
     case unknownTool(String)
@@ -15,21 +14,20 @@ public enum ToolUsingAgentError: Error, Sendable {
 
 @SpecDrivenAgent
 public actor ToolUsingAgent {
-    private let modelName: String
-    private let maxRetries: Int
+    private let config: AgentConfiguration
     private let _llmClient: LLMClient
 
     private static let maxToolIterations = 10
 
+    public init(configuration: AgentConfiguration) throws {
+        self.config = configuration
+        self._llmClient = try configuration.buildLLMClient()
+    }
+
+    /// Legacy convenience init for backward compatibility.
     public init(serverURL: String, modelName: String, apiKey: String? = nil, maxRetries: Int = 3) throws {
-        guard !serverURL.isEmpty,
-              let parsedURL = URL(string: serverURL),
-              parsedURL.scheme == "http" || parsedURL.scheme == "https" else {
-            throw ToolUsingAgentError.invalidServerURL
-        }
-        self.modelName = modelName
-        self.maxRetries = maxRetries
-        self._llmClient = try LLMClient(baseURL: serverURL, apiKey: apiKey ?? "")
+        let config = try AgentConfiguration(serverURL: serverURL, modelName: modelName, apiKey: apiKey, maxRetries: maxRetries)
+        try self.init(configuration: config)
     }
 
     public func execute(goal: String) async throws -> String {
@@ -43,10 +41,11 @@ public actor ToolUsingAgent {
         _transcript.append(.userMessage(goal))
 
         let toolDefs = Self.toolDefinitions()
+        let timeout = TimeInterval(config.timeoutSeconds)
 
-        var request = try ResponseRequest(model: modelName) {
-            try RequestTimeout(300)
-            try ResourceTimeout(300)
+        var request = try ResponseRequest(model: config.modelName) {
+            try RequestTimeout(timeout)
+            try ResourceTimeout(timeout)
         } input: {
             User(goal)
         }
@@ -59,8 +58,9 @@ public actor ToolUsingAgent {
             let response: ResponseObject
             do {
                 let currentRequest = request
-                response = try await retryWithBackoff(maxAttempts: maxRetries) {
-                    try await self._llmClient.send(currentRequest)
+                let capturedClient = _llmClient
+                response = try await retryWithBackoff(maxAttempts: config.maxRetries) {
+                    try await capturedClient.send(currentRequest)
                 }
             } catch {
                 _status = .error(error)
@@ -85,32 +85,39 @@ public actor ToolUsingAgent {
                 throw ToolUsingAgentError.toolLoopExceeded
             }
 
-            var toolOutputs: [InputItem] = []
-
+            // Log all tool calls
             for call in functionCalls {
                 _transcript.append(.toolCall(name: call.name, arguments: call.arguments))
+            }
 
-                let start = ContinuousClock.now
-                let result: String
-                do {
-                    result = try dispatchTool(name: call.name, arguments: call.arguments)
-                } catch {
-                    let duration = ContinuousClock.now - start
-                    _transcript.append(.toolResult(name: call.name, result: "Error: \(error)", duration: duration))
-                    _status = .error(error)
-                    throw error
+            // Execute via ToolExecutor (all tools are concurrency-safe pure functions)
+            let toolCalls = functionCalls.enumerated().map { (i, call) in
+                ToolExecutor.ToolCall(name: call.name, arguments: call.arguments, index: i)
+            }
+            let executor = ToolExecutor()
+            let results: [ToolExecutor.ToolResult]
+            do {
+                results = try await executor.execute(calls: toolCalls) { name, arguments in
+                    try Self.dispatchTool(name: name, arguments: arguments)
                 }
-                let duration = ContinuousClock.now - start
-                _transcript.append(.toolResult(name: call.name, result: result, duration: duration))
-                toolOutputs.append(FunctionOutput(callId: call.callId, output: result))
+            } catch {
+                _status = .error(error)
+                throw error
+            }
+
+            // Log results and build outputs
+            var toolOutputs: [InputItem] = []
+            for result in results {
+                _transcript.append(.toolResult(name: result.name, result: result.result, duration: result.duration))
+                toolOutputs.append(FunctionOutput(callId: functionCalls[result.index].callId, output: result.result))
             }
 
             let previousId = response.id
             request = try ResponseRequest(
-                model: modelName,
+                model: config.modelName,
                 config: {
-                    try RequestTimeout(300)
-                    try ResourceTimeout(300)
+                    try RequestTimeout(timeout)
+                    try ResourceTimeout(timeout)
                     try PreviousResponseId(previousId)
                 },
                 input: toolOutputs
@@ -167,15 +174,15 @@ public actor ToolUsingAgent {
 
     // MARK: - Tool Dispatch
 
-    private func dispatchTool(name: String, arguments: String) throws -> String {
+    private static func dispatchTool(name: String, arguments: String) throws -> String {
         let data = Data(arguments.utf8)
         switch name {
         case "calculate":
-            return try Self.calculate(data: data)
+            return try calculate(data: data)
         case "convertUnit":
-            return try Self.convertUnit(data: data)
+            return try convertUnit(data: data)
         case "formatNumber":
-            return try Self.formatNumber(data: data)
+            return try formatNumber(data: data)
         default:
             throw ToolUsingAgentError.unknownTool(name)
         }
@@ -257,50 +264,5 @@ public actor ToolUsingAgent {
         let args = try JSONDecoder().decode(FormatNumberArgs.self, from: data)
         let clamped = min(max(args.decimalPlaces, 0), 10)
         return String(format: "%.\(clamped)f", args.value)
-    }
-
-    // MARK: - Retry
-
-    private func retryWithBackoff<T: Sendable>(
-        maxAttempts: Int,
-        baseDelay: Duration = .milliseconds(500),
-        operation: @Sendable () async throws -> T
-    ) async throws -> T {
-        var lastError: Error?
-        for attempt in 1...maxAttempts {
-            do {
-                return try await operation()
-            } catch {
-                lastError = error
-                guard isRetryable(error), attempt < maxAttempts else {
-                    if attempt >= maxAttempts {
-                        break
-                    }
-                    throw error
-                }
-                let nextAttempt = attempt + 1
-                _transcript.append(.reasoning(
-                    ReasoningItem(
-                        id: "retry-\(nextAttempt)",
-                        summary: [ReasoningSummary(type: "summary_text", text: "Retrying LLM call (attempt \(nextAttempt) of \(maxAttempts))\u{2026}")]
-                    )
-                ))
-                let delayNs = UInt64(baseDelay.components.attoseconds / 1_000_000_000) * UInt64(1 << (attempt - 1))
-                try await Task.sleep(nanoseconds: delayNs)
-            }
-        }
-        throw lastError!
-    }
-
-    private func isRetryable(_ error: Error) -> Bool {
-        if let urlError = error as? URLError {
-            switch urlError.code {
-            case .timedOut, .networkConnectionLost, .notConnectedToInternet:
-                return true
-            default:
-                return false
-            }
-        }
-        return false
     }
 }

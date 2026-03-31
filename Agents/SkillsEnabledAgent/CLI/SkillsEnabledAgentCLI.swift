@@ -1,15 +1,15 @@
-// Generated strictly from Agents/LLMChatPersonas/specs/Overview.md + shared CodeGenSpecs/
+// Generated strictly from Agents/SkillsEnabledAgent/specs/Overview.md + shared CodeGenSpecs/
 // Do not edit manually — update the spec and re-generate
 
 import ArgumentParser
-import LLMChatPersonasAgent
+import SkillsEnabledAgentAgent
 import SwiftSynapseMacrosClient
 
 @main
-struct LLMChatPersonasCLI: AsyncParsableCommand {
+struct SkillsEnabledAgentCLI: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
-        commandName: "llm-chat-personas",
-        abstract: "Send a prompt to an Open Responses API endpoint and optionally rewrite the reply in a persona's voice."
+        commandName: "skills-enabled-agent",
+        abstract: "Send a prompt to an LLM with agentskills.io skill discovery and activation."
     )
 
     @Argument(help: "The prompt to send to the LLM.")
@@ -24,24 +24,14 @@ struct LLMChatPersonasCLI: AsyncParsableCommand {
     @Option(name: .long, help: "Optional API key for authentication. Falls back to SWIFTSYNAPSE_API_KEY env var.")
     var apiKey: String?
 
-    @Option(name: .long, help: "Optional persona for rewriting the response (e.g. pirate, James Kirk).")
-    var persona: String?
-
     func run() async throws {
         let config = try AgentConfiguration.fromEnvironment(overrides: .init(
             serverURL: serverURL,
             modelName: model,
             apiKey: apiKey
         ))
-        let agent = try LLMChatPersonas(configuration: config)
-        let result = try await agent.execute(goal: goal, persona: persona)
-
-        if let persona, let initial = await agent.lastInitialResponse {
-            print("--- Original Response ---")
-            print(initial)
-            print()
-            print("--- \(persona) Response ---")
-        }
+        let agent = try SkillsEnabledAgent(configuration: config)
+        let result = try await agent.execute(goal: goal)
         print(result)
     }
 }

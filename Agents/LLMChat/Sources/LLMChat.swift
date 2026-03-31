@@ -6,23 +6,23 @@ import SwiftSynapseMacrosClient
 
 public enum LLMChatError: Error, Sendable {
     case emptyGoal
-    case invalidServerURL
     case noResponseContent
 }
 
 @SpecDrivenAgent
 public actor LLMChat {
-    private let modelName: String
+    private let config: AgentConfiguration
     private let _llmClient: LLMClient
 
+    public init(configuration: AgentConfiguration) throws {
+        self.config = configuration
+        self._llmClient = try configuration.buildLLMClient()
+    }
+
+    /// Legacy convenience init for backward compatibility.
     public init(serverURL: String, modelName: String, apiKey: String? = nil) throws {
-        guard !serverURL.isEmpty,
-              let parsedURL = URL(string: serverURL),
-              parsedURL.scheme == "http" || parsedURL.scheme == "https" else {
-            throw LLMChatError.invalidServerURL
-        }
-        self.modelName = modelName
-        self._llmClient = try LLMClient(baseURL: serverURL, apiKey: apiKey ?? "")
+        let config = try AgentConfiguration(serverURL: serverURL, modelName: modelName, apiKey: apiKey)
+        try self.init(configuration: config)
     }
 
     public func execute(goal: String) async throws -> String {
@@ -31,18 +31,29 @@ public actor LLMChat {
             throw LLMChatError.emptyGoal
         }
         _status = .running
+        _transcript.reset()
         _transcript.append(.userMessage(goal))
 
-        let request = try ResponseRequest(model: modelName) {
-            try RequestTimeout(300)
-            try ResourceTimeout(300)
+        let timeout = TimeInterval(config.timeoutSeconds)
+        let request = try ResponseRequest(model: config.modelName) {
+            try RequestTimeout(timeout)
+            try ResourceTimeout(timeout)
         } input: {
             User(goal)
         }
 
-        let response = try await _llmClient.send(request)
-        let responseText = response.firstOutputText ?? ""
+        let response: ResponseObject
+        do {
+            let capturedClient = _llmClient
+            response = try await retryWithBackoff(maxAttempts: config.maxRetries) {
+                try await capturedClient.send(request)
+            }
+        } catch {
+            _status = .error(error)
+            throw error
+        }
 
+        let responseText = response.firstOutputText ?? ""
         guard !responseText.isEmpty else {
             _status = .error(LLMChatError.noResponseContent)
             throw LLMChatError.noResponseContent

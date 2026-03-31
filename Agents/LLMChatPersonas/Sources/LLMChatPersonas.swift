@@ -6,25 +6,25 @@ import SwiftSynapseMacrosClient
 
 public enum LLMChatPersonasError: Error, Sendable {
     case emptyGoal
-    case invalidServerURL
     case noResponseContent
     case noPersonaResponseContent
 }
 
 @SpecDrivenAgent
 public actor LLMChatPersonas {
-    private let modelName: String
+    private let config: AgentConfiguration
     private let _llmClient: LLMClient
     public private(set) var lastInitialResponse: String?
 
+    public init(configuration: AgentConfiguration) throws {
+        self.config = configuration
+        self._llmClient = try configuration.buildLLMClient()
+    }
+
+    /// Legacy convenience init for backward compatibility.
     public init(serverURL: String, modelName: String, apiKey: String? = nil) throws {
-        guard !serverURL.isEmpty,
-              let parsedURL = URL(string: serverURL),
-              parsedURL.scheme == "http" || parsedURL.scheme == "https" else {
-            throw LLMChatPersonasError.invalidServerURL
-        }
-        self.modelName = modelName
-        self._llmClient = try LLMClient(baseURL: serverURL, apiKey: apiKey ?? "")
+        let config = try AgentConfiguration(serverURL: serverURL, modelName: modelName, apiKey: apiKey)
+        try self.init(configuration: config)
     }
 
     public func execute(goal: String, persona: String? = nil) async throws -> String {
@@ -33,16 +33,28 @@ public actor LLMChatPersonas {
             throw LLMChatPersonasError.emptyGoal
         }
         _status = .running
+        _transcript.reset()
         _transcript.append(.userMessage(goal))
 
-        let firstRequest = try ResponseRequest(model: modelName) {
-            try RequestTimeout(300)
-            try ResourceTimeout(300)
+        let timeout = TimeInterval(config.timeoutSeconds)
+        let firstRequest = try ResponseRequest(model: config.modelName) {
+            try RequestTimeout(timeout)
+            try ResourceTimeout(timeout)
         } input: {
             User(goal)
         }
 
-        let firstResponse = try await _llmClient.send(firstRequest)
+        let firstResponse: ResponseObject
+        do {
+            let capturedClient = _llmClient
+            firstResponse = try await retryWithBackoff(maxAttempts: config.maxRetries) {
+                try await capturedClient.send(firstRequest)
+            }
+        } catch {
+            _status = .error(error)
+            throw error
+        }
+
         let firstResponseId = firstResponse.id
         let initialResponse = firstResponse.firstOutputText ?? ""
 
@@ -62,15 +74,25 @@ public actor LLMChatPersonas {
         let personaPrompt = "Rewrite your previous response in the style and voice of \(persona). Preserve all factual content but express it exactly as \(persona) would speak."
         _transcript.append(.userMessage(personaPrompt))
 
-        let secondRequest = try ResponseRequest(model: modelName) {
-            try RequestTimeout(300)
-            try ResourceTimeout(300)
+        let secondRequest = try ResponseRequest(model: config.modelName) {
+            try RequestTimeout(timeout)
+            try ResourceTimeout(timeout)
             try PreviousResponseId(firstResponseId)
         } input: {
             User(personaPrompt)
         }
 
-        let secondResponse = try await _llmClient.send(secondRequest)
+        let secondResponse: ResponseObject
+        do {
+            let capturedClient = _llmClient
+            secondResponse = try await retryWithBackoff(maxAttempts: config.maxRetries) {
+                try await capturedClient.send(secondRequest)
+            }
+        } catch {
+            _status = .error(error)
+            throw error
+        }
+
         let personaResponse = secondResponse.firstOutputText ?? ""
 
         guard !personaResponse.isEmpty else {

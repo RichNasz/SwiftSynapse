@@ -3,16 +3,17 @@
 
 import Foundation
 import Testing
+import SwiftSynapseMacrosClient
 @testable import StreamingChatAgentAgent
 
 @Test func streamingChatAgentInitThrowsOnInvalidURL() {
-    #expect(throws: StreamingChatAgentError.self) {
+    #expect(throws: AgentConfigurationError.self) {
         _ = try StreamingChatAgent(serverURL: ":::not-a-url", modelName: "test-model")
     }
 }
 
 @Test func streamingChatAgentInitThrowsOnEmptyURL() {
-    #expect(throws: StreamingChatAgentError.self) {
+    #expect(throws: AgentConfigurationError.self) {
         _ = try StreamingChatAgent(serverURL: "", modelName: "test-model")
     }
 }

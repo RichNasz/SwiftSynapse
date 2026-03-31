@@ -17,6 +17,7 @@ public actor SimpleEcho {
             throw SimpleEchoError.emptyGoal
         }
         _status = .running
+        _transcript.reset()
         _transcript.append(.userMessage(goal))
         let echoed = "Echo from SwiftSynapse: \(goal)"
         _transcript.append(.assistantMessage(echoed))

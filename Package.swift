@@ -47,13 +47,17 @@ let package = Package(
             name: "llm-chat",
             dependencies: [
                 "LLMChatAgent",
+                .product(name: "SwiftSynapseMacrosClient", package: "SwiftSynapseMacros"),
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ],
             path: "Agents/LLMChat/CLI"
         ),
         .testTarget(
             name: "LLMChatTests",
-            dependencies: ["LLMChatAgent"],
+            dependencies: [
+                "LLMChatAgent",
+                .product(name: "SwiftSynapseMacrosClient", package: "SwiftSynapseMacros"),
+            ],
             path: "Agents/LLMChat/Tests"
         ),
         .target(
@@ -68,13 +72,17 @@ let package = Package(
             name: "llm-chat-personas",
             dependencies: [
                 "LLMChatPersonasAgent",
+                .product(name: "SwiftSynapseMacrosClient", package: "SwiftSynapseMacros"),
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ],
             path: "Agents/LLMChatPersonas/CLI"
         ),
         .testTarget(
             name: "LLMChatPersonasTests",
-            dependencies: ["LLMChatPersonasAgent"],
+            dependencies: [
+                "LLMChatPersonasAgent",
+                .product(name: "SwiftSynapseMacrosClient", package: "SwiftSynapseMacros"),
+            ],
             path: "Agents/LLMChatPersonas/Tests"
         ),
         .target(
@@ -89,13 +97,17 @@ let package = Package(
             name: "retrying-llm-chat-agent",
             dependencies: [
                 "RetryingLLMChatAgentAgent",
+                .product(name: "SwiftSynapseMacrosClient", package: "SwiftSynapseMacros"),
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ],
             path: "Agents/RetryingLLMChatAgent/CLI"
         ),
         .testTarget(
             name: "RetryingLLMChatAgentTests",
-            dependencies: ["RetryingLLMChatAgentAgent"],
+            dependencies: [
+                "RetryingLLMChatAgentAgent",
+                .product(name: "SwiftSynapseMacrosClient", package: "SwiftSynapseMacros"),
+            ],
             path: "Agents/RetryingLLMChatAgent/Tests"
         ),
         .target(
@@ -110,13 +122,17 @@ let package = Package(
             name: "streaming-chat-agent",
             dependencies: [
                 "StreamingChatAgentAgent",
+                .product(name: "SwiftSynapseMacrosClient", package: "SwiftSynapseMacros"),
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ],
             path: "Agents/StreamingChatAgent/CLI"
         ),
         .testTarget(
             name: "StreamingChatAgentTests",
-            dependencies: ["StreamingChatAgentAgent"],
+            dependencies: [
+                "StreamingChatAgentAgent",
+                .product(name: "SwiftSynapseMacrosClient", package: "SwiftSynapseMacros"),
+            ],
             path: "Agents/StreamingChatAgent/Tests"
         ),
         .target(
@@ -131,14 +147,42 @@ let package = Package(
             name: "tool-using-agent",
             dependencies: [
                 "ToolUsingAgentAgent",
+                .product(name: "SwiftSynapseMacrosClient", package: "SwiftSynapseMacros"),
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ],
             path: "Agents/ToolUsingAgent/CLI"
         ),
         .testTarget(
             name: "ToolUsingAgentTests",
-            dependencies: ["ToolUsingAgentAgent"],
+            dependencies: [
+                "ToolUsingAgentAgent",
+                .product(name: "SwiftSynapseMacrosClient", package: "SwiftSynapseMacros"),
+            ],
             path: "Agents/ToolUsingAgent/Tests"
+        ),
+        .target(
+            name: "SkillsEnabledAgentAgent",
+            dependencies: [
+                .product(name: "SwiftSynapseMacrosClient", package: "SwiftSynapseMacros"),
+            ],
+            path: "Agents/SkillsEnabledAgent/Sources"
+        ),
+        .executableTarget(
+            name: "skills-enabled-agent",
+            dependencies: [
+                "SkillsEnabledAgentAgent",
+                .product(name: "SwiftSynapseMacrosClient", package: "SwiftSynapseMacros"),
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ],
+            path: "Agents/SkillsEnabledAgent/CLI"
+        ),
+        .testTarget(
+            name: "SkillsEnabledAgentTests",
+            dependencies: [
+                "SkillsEnabledAgentAgent",
+                .product(name: "SwiftSynapseMacrosClient", package: "SwiftSynapseMacros"),
+            ],
+            path: "Agents/SkillsEnabledAgent/Tests"
         ),
     ]
 )

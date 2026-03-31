@@ -3,16 +3,17 @@
 
 import Foundation
 import Testing
+import SwiftSynapseMacrosClient
 @testable import LLMChatAgent
 
 @Test func llmChatInitThrowsOnInvalidURL() {
-    #expect(throws: LLMChatError.self) {
+    #expect(throws: AgentConfigurationError.self) {
         _ = try LLMChat(serverURL: ":::not-a-url", modelName: "test-model")
     }
 }
 
 @Test func llmChatInitThrowsOnEmptyURL() {
-    #expect(throws: LLMChatError.self) {
+    #expect(throws: AgentConfigurationError.self) {
         _ = try LLMChat(serverURL: "", modelName: "test-model")
     }
 }

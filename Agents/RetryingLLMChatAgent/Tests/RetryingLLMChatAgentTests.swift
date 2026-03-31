@@ -3,16 +3,17 @@
 
 import Foundation
 import Testing
+import SwiftSynapseMacrosClient
 @testable import RetryingLLMChatAgentAgent
 
 @Test func retryingAgentInitThrowsOnInvalidURL() {
-    #expect(throws: RetryingLLMChatAgentError.self) {
+    #expect(throws: AgentConfigurationError.self) {
         _ = try RetryingLLMChatAgent(serverURL: ":::not-a-url", modelName: "test-model")
     }
 }
 
 @Test func retryingAgentInitThrowsOnEmptyURL() {
-    #expect(throws: RetryingLLMChatAgentError.self) {
+    #expect(throws: AgentConfigurationError.self) {
         _ = try RetryingLLMChatAgent(serverURL: "", modelName: "test-model")
     }
 }
@@ -41,18 +42,10 @@ import Testing
 }
 
 @Test func retryingAgentMaxRetriesValidation() {
-    do {
+    #expect(throws: AgentConfigurationError.self) {
         _ = try RetryingLLMChatAgent(serverURL: "http://127.0.0.1:1234/v1/responses", modelName: "test-model", maxRetries: 0)
-        Issue.record("Expected invalidConfiguration error")
-    } catch let error as RetryingLLMChatAgentError {
-        guard case .invalidConfiguration = error else {
-            Issue.record("Expected .invalidConfiguration, got \(error)")
-            return
-        }
-    } catch {
-        Issue.record("Unexpected error type: \(error)")
     }
-    #expect(throws: RetryingLLMChatAgentError.self) {
+    #expect(throws: AgentConfigurationError.self) {
         _ = try RetryingLLMChatAgent(serverURL: "http://127.0.0.1:1234/v1/responses", modelName: "test-model", maxRetries: 11)
     }
 }

@@ -6,29 +6,23 @@ import SwiftSynapseMacrosClient
 
 public enum RetryingLLMChatAgentError: Error, Sendable {
     case emptyGoal
-    case invalidServerURL
-    case invalidConfiguration
     case noResponseContent
 }
 
 @SpecDrivenAgent
 public actor RetryingLLMChatAgent {
-    private let modelName: String
-    private let maxRetries: Int
+    private let config: AgentConfiguration
     private let _llmClient: LLMClient
 
+    public init(configuration: AgentConfiguration) throws {
+        self.config = configuration
+        self._llmClient = try configuration.buildLLMClient()
+    }
+
+    /// Legacy convenience init for backward compatibility.
     public init(serverURL: String, modelName: String, apiKey: String? = nil, maxRetries: Int = 3) throws {
-        guard !serverURL.isEmpty,
-              let parsedURL = URL(string: serverURL),
-              parsedURL.scheme == "http" || parsedURL.scheme == "https" else {
-            throw RetryingLLMChatAgentError.invalidServerURL
-        }
-        guard (1...10).contains(maxRetries) else {
-            throw RetryingLLMChatAgentError.invalidConfiguration
-        }
-        self.modelName = modelName
-        self.maxRetries = maxRetries
-        self._llmClient = try LLMClient(baseURL: serverURL, apiKey: apiKey ?? "")
+        let config = try AgentConfiguration(serverURL: serverURL, modelName: modelName, apiKey: apiKey, maxRetries: maxRetries)
+        try self.init(configuration: config)
     }
 
     public func execute(goal: String) async throws -> String {
@@ -41,9 +35,10 @@ public actor RetryingLLMChatAgent {
         _transcript.reset()
         _transcript.append(.userMessage(goal))
 
-        let request = try ResponseRequest(model: modelName) {
-            try RequestTimeout(300)
-            try ResourceTimeout(300)
+        let timeout = TimeInterval(config.timeoutSeconds)
+        let request = try ResponseRequest(model: config.modelName) {
+            try RequestTimeout(timeout)
+            try ResourceTimeout(timeout)
         } input: {
             User(goal)
         }
@@ -52,8 +47,9 @@ public actor RetryingLLMChatAgent {
 
         let response: ResponseObject
         do {
-            response = try await retryWithBackoff(maxAttempts: maxRetries) {
-                try await self._llmClient.send(request)
+            let capturedClient = _llmClient
+            response = try await retryWithBackoff(maxAttempts: config.maxRetries) {
+                try await capturedClient.send(request)
             }
         } catch {
             _status = .error(error)
@@ -70,48 +66,5 @@ public actor RetryingLLMChatAgent {
         _transcript.append(.assistantMessage(responseText))
         _status = .completed(responseText)
         return responseText
-    }
-
-    private func retryWithBackoff<T: Sendable>(
-        maxAttempts: Int,
-        baseDelay: Duration = .milliseconds(500),
-        operation: @Sendable () async throws -> T
-    ) async throws -> T {
-        var lastError: Error?
-        for attempt in 1...maxAttempts {
-            do {
-                return try await operation()
-            } catch {
-                lastError = error
-                guard isRetryable(error), attempt < maxAttempts else {
-                    if attempt >= maxAttempts {
-                        break
-                    }
-                    throw error
-                }
-                let nextAttempt = attempt + 1
-                _transcript.append(.reasoning(
-                    ReasoningItem(
-                        id: "retry-\(nextAttempt)",
-                        summary: [ReasoningSummary(type: "summary_text", text: "Retrying LLM call (attempt \(nextAttempt) of \(maxAttempts))\u{2026}")]
-                    )
-                ))
-                let delayNs = UInt64(baseDelay.components.attoseconds / 1_000_000_000) * UInt64(1 << (attempt - 1))
-                try await Task.sleep(nanoseconds: delayNs)
-            }
-        }
-        throw lastError!
-    }
-
-    private func isRetryable(_ error: Error) -> Bool {
-        if let urlError = error as? URLError {
-            switch urlError.code {
-            case .timedOut, .networkConnectionLost, .notConnectedToInternet:
-                return true
-            default:
-                return false
-            }
-        }
-        return false
     }
 }

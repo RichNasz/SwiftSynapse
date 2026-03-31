@@ -3,16 +3,17 @@
 
 import Foundation
 import Testing
+import SwiftSynapseMacrosClient
 @testable import ToolUsingAgentAgent
 
 @Test func toolUsingAgentInitThrowsOnInvalidURL() {
-    #expect(throws: ToolUsingAgentError.self) {
+    #expect(throws: AgentConfigurationError.self) {
         _ = try ToolUsingAgent(serverURL: ":::not-a-url", modelName: "test-model")
     }
 }
 
 @Test func toolUsingAgentInitThrowsOnEmptyURL() {
-    #expect(throws: ToolUsingAgentError.self) {
+    #expect(throws: AgentConfigurationError.self) {
         _ = try ToolUsingAgent(serverURL: "", modelName: "test-model")
     }
 }

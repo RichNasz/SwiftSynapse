@@ -6,23 +6,23 @@ import SwiftSynapseMacrosClient
 
 public enum StreamingChatAgentError: Error, Sendable {
     case emptyGoal
-    case invalidServerURL
     case noResponseContent
 }
 
 @SpecDrivenAgent
 public actor StreamingChatAgent {
-    private let modelName: String
+    private let config: AgentConfiguration
     private let _llmClient: LLMClient
 
+    public init(configuration: AgentConfiguration) throws {
+        self.config = configuration
+        self._llmClient = try configuration.buildLLMClient()
+    }
+
+    /// Legacy convenience init for backward compatibility.
     public init(serverURL: String, modelName: String, apiKey: String? = nil) throws {
-        guard !serverURL.isEmpty,
-              let parsedURL = URL(string: serverURL),
-              parsedURL.scheme == "http" || parsedURL.scheme == "https" else {
-            throw StreamingChatAgentError.invalidServerURL
-        }
-        self.modelName = modelName
-        self._llmClient = try LLMClient(baseURL: serverURL, apiKey: apiKey ?? "")
+        let config = try AgentConfiguration(serverURL: serverURL, modelName: modelName, apiKey: apiKey)
+        try self.init(configuration: config)
     }
 
     public func execute(goal: String) async throws -> String {
@@ -35,9 +35,10 @@ public actor StreamingChatAgent {
         _transcript.reset()
         _transcript.append(.userMessage(goal))
 
-        let request = try ResponseRequest(model: modelName, stream: true) {
-            try RequestTimeout(300)
-            try ResourceTimeout(300)
+        let timeout = TimeInterval(config.timeoutSeconds)
+        let request = try ResponseRequest(model: config.modelName, stream: true) {
+            try RequestTimeout(timeout)
+            try ResourceTimeout(timeout)
         } input: {
             User(goal)
         }
