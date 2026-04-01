@@ -1,7 +1,7 @@
 // Generated strictly from Agents/SimpleEcho/specs/Overview.md + shared CodeGenSpecs/
 // Do not edit manually — update the spec and re-generate
 
-import SwiftSynapseMacrosClient
+import SwiftSynapseHarness
 
 @SpecDrivenAgent
 public actor SimpleEcho {

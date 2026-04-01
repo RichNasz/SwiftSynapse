@@ -3,7 +3,7 @@
 
 import ArgumentParser
 import RetryingLLMChatAgentAgent
-import SwiftSynapseMacrosClient
+import SwiftSynapseHarness
 
 @main
 struct RetryingLLMChatAgentCLI: AsyncParsableCommand {

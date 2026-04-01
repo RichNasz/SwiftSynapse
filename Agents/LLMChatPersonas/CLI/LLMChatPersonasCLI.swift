@@ -3,7 +3,7 @@
 
 import ArgumentParser
 import LLMChatPersonasAgent
-import SwiftSynapseMacrosClient
+import SwiftSynapseHarness
 
 @main
 struct LLMChatPersonasCLI: AsyncParsableCommand {

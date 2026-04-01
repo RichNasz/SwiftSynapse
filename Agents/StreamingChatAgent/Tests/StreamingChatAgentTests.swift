@@ -3,7 +3,7 @@
 
 import Foundation
 import Testing
-import SwiftSynapseMacrosClient
+import SwiftSynapseHarness
 @testable import StreamingChatAgentAgent
 
 @Test func streamingChatAgentInitThrowsOnInvalidURL() {

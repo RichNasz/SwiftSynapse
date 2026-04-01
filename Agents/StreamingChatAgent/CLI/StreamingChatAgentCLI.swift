@@ -3,7 +3,7 @@
 
 import ArgumentParser
 import StreamingChatAgentAgent
-import SwiftSynapseMacrosClient
+import SwiftSynapseHarness
 
 @main
 struct StreamingChatAgentCLI: AsyncParsableCommand {

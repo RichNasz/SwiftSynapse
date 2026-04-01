@@ -2,7 +2,7 @@
 // Do not edit manually — update the spec and re-generate
 
 import Testing
-import SwiftSynapseMacrosClient
+import SwiftSynapseHarness
 @testable import SimpleEchoAgent
 
 @Test func simpleEchoProducesExpectedTranscript() async throws {

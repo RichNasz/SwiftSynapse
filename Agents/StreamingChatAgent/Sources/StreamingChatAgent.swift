@@ -2,7 +2,7 @@
 // Do not edit manually — update the spec and re-generate
 
 import Foundation
-import SwiftSynapseMacrosClient
+import SwiftSynapseHarness
 
 public enum StreamingChatAgentError: Error, Sendable {
     case noResponseContent

@@ -2,7 +2,7 @@
 
 import SwiftUI
 import SwiftSynapseUI
-import SwiftSynapseMacrosClient
+import SwiftSynapseHarness
 import LLMChatAgent
 import StreamingChatAgentAgent
 import ToolUsingAgentAgent

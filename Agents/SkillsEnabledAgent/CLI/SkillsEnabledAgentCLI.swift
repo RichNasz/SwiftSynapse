@@ -3,7 +3,7 @@
 
 import ArgumentParser
 import SkillsEnabledAgentAgent
-import SwiftSynapseMacrosClient
+import SwiftSynapseHarness
 
 @main
 struct SkillsEnabledAgentCLI: AsyncParsableCommand {
