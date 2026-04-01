@@ -233,6 +233,28 @@ let result = try await agent.send(goal)
 | `AgentLLMClient` | Protocol — `send(_:)` / `stream(_:)` with `CloudLLMClient` and `HybridLLMClient` (on-device + cloud fallback) implementations |
 | `AgentSession` | Codable struct — session persistence with `CodableTranscriptEntry` bridge |
 
+### Agent Harness (via SwiftSynapseMacros)
+
+The [SwiftSynapseMacros](https://github.com/RichNasz/SwiftSynapseMacros) package provides a complete agent harness — everything between `run(goal:)` and your domain logic:
+
+| Capability | Key Types |
+|---|---|
+| **Typed Tools** | `AgentToolProtocol`, `ToolRegistry`, `AgentToolLoop` — JSON-schema tools with batch dispatch |
+| **Hooks** | `AgentHookPipeline`, `ClosureHook` — 15 event types with block/modify/proceed semantics |
+| **Permissions** | `PermissionGate`, `ToolListPolicy` — policy-driven tool access with human-in-the-loop |
+| **Recovery** | `RecoveryChain` — self-healing from context overflow and output truncation |
+| **Streaming** | `StreamingToolExecutor` — dispatch tools as they stream from the LLM |
+| **Subagents** | `SubagentRunner` — child agents with shared or independent lifecycles |
+| **Session Persistence** | `FileSessionStore` — pause/resume workflows across app launches |
+| **Guardrails** | `GuardrailPipeline`, `ContentFilter` — PII/secret detection, compliance checks |
+| **MCP** | `MCPManager` — connect to Model Context Protocol servers (databases, CRMs, APIs) |
+| **Coordination** | `CoordinationRunner` — dependency-aware multi-agent workflows |
+| **Plugins** | `PluginManager` — modular extension mechanism for hooks, tools, guardrails |
+| **Caching** | `ToolResultCache` — LRU/FIFO with TTL for identical tool calls |
+| **Compression** | `CompositeCompressor` — advanced context window management |
+| **Config Hierarchy** | `ConfigurationResolver` — 7-level priority (CLI > local > project > user > MDM > remote > env) |
+| **Telemetry** | `TelemetrySink` — structured events to OSLog, in-memory, or custom backends |
+
 ### SwiftSynapseUI Components
 
 | View | Purpose |
@@ -362,7 +384,7 @@ This project is released under the **MIT License** — use it, fork it, build on
 
 | Library | Purpose |
 |---|---|
-| [SwiftSynapseMacros](https://github.com/RichNasz/SwiftSynapseMacros) | Agent harness + macros + SwiftUI components — `@SpecDrivenAgent`, `AgentConfiguration`, `retryWithBackoff`, `SwiftSynapseUI`, `AgentAppIntent` |
+| [SwiftSynapseMacros](https://github.com/RichNasz/SwiftSynapseMacros) | Production agent harness + macros + SwiftUI — `@SpecDrivenAgent`, typed tools, hooks, permissions, recovery, streaming, MCP, guardrails, multi-agent coordination, session persistence, caching, plugins, telemetry, `SwiftSynapseUI` |
 | [SwiftOpenResponsesDSL](https://github.com/RichNasz/SwiftOpenResponsesDSL) | Base LLM communication layer — `Agent`, `ResponseRequest`, `LLMClient`, `AgentTool`, `ToolSession` |
 | [SwiftLLMToolMacros](https://github.com/RichNasz/SwiftLLMToolMacros) | Tool definition macros — `@LLMTool` / `@LLMToolArguments` generate `FunctionToolParam` schemas |
 | [SwiftOpenSkills](https://github.com/RichNasz/SwiftOpenSkills) | agentskills.io standard in Swift — `SkillStore`, `SkillsAgent`, skill discovery and activation |

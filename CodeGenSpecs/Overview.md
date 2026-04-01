@@ -38,8 +38,9 @@ Understanding the dependency order is required for correct import decisions:
 | Package | Depends on | Purpose |
 |---------|------------|---------|
 | `SwiftOpenResponsesDSL` | Foundation only | LLM communication — `ResponseRequest`, `LLMClient`, `ResponseObject`, `TranscriptEntry` |
-| `SwiftSynapseMacros` | `SwiftOpenResponsesDSL`, `SwiftLLMToolMacros` | Agent creation macros — `@SpecDrivenAgent` synthesizes `AgentStatus`, `ObservableTranscript`, `LLMClient`, and `run(goal:)` |
+| `SwiftSynapseMacros` | `SwiftOpenResponsesDSL`, `SwiftLLMToolMacros`, `SwiftOpenSkills` | Agent harness + macros + SwiftUI — `@SpecDrivenAgent`, `AgentToolProtocol`, `ToolRegistry`, `AgentToolLoop`, hooks, permissions, recovery, streaming, MCP, guardrails, multi-agent coordination, session persistence, caching, plugins, telemetry, `SwiftSynapseUI` |
 | `SwiftLLMToolMacros` | `SwiftOpenResponsesDSL` | Tool macros — `@LLMTool` / `@LLMToolArguments` generate `FunctionToolParam` schemas |
+| `SwiftOpenSkills` | `SwiftOpenResponsesDSL` | agentskills.io standard — `SkillStore`, `SkillsAgent`, skill discovery and activation |
 
 When generating imports for an agent file:
 - Import `SwiftSynapseMacrosClient` for every agent actor — it re-exports both `SwiftOpenResponsesDSL` and `SwiftLLMToolMacros`, so a single import covers all types.
