@@ -102,7 +102,7 @@ All CLI options (`--server-url`, `--model`, `--api-key`) are optional when envir
 **6. Or invoke an agent in code**
 
 ```swift
-import SwiftSynapseMacrosClient
+import SwiftSynapseHarness
 import LLMChatAgent
 
 // Configure once — validated at construction time
@@ -175,7 +175,7 @@ SwiftSynapse ships 7 runnable agents today. Every agent is fully spec-driven —
 Every agent is a thin wrapper over `SwiftOpenResponsesDSL.Agent`:
 
 ```swift
-import SwiftSynapseMacrosClient
+import SwiftSynapseHarness
 
 @SpecDrivenAgent
 public actor MyAgent {
@@ -332,7 +332,7 @@ targets: [
     .target(
         name: "YourAgent",
         dependencies: [
-            .product(name: "SwiftSynapseMacrosClient", package: "SwiftSynapseMacros"),
+            .product(name: "SwiftSynapseHarness", package: "SwiftSynapseHarness"),
         ]
     )
 ]
@@ -349,7 +349,7 @@ For SwiftUI views and App Intents:
 )
 ```
 
-> `SwiftSynapseMacrosClient` re-exports `SwiftOpenResponsesDSL`, `SwiftLLMToolMacros`, and `SwiftOpenSkills`, so a single import is all most agent files need.
+> `SwiftSynapseHarness` re-exports `SwiftSynapseMacrosClient` (which re-exports `SwiftOpenResponsesDSL` and `SwiftLLMToolMacros`), so a single import is all most agent files need.
 
 > **Platform requirement:** On-device Foundation Models inference requires **iOS 26+**, **macOS 26+**, or **visionOS 2.4+** with Apple Intelligence enabled. For broader compatibility, point `AgentConfiguration` at any OpenAI-compatible cloud endpoint.
 
