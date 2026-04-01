@@ -185,14 +185,14 @@ struct DashboardView: View {
                 switch selectedAgent {
                 case .echo:
                     let agent = SimpleEcho()
-                    _ = try await agent.execute(goal: goal)
+                    _ = try await agent.run(goal: goal)
                     currentTranscript = await agent.transcript
                     currentStatus = await agent.status
 
                 case .llmChat:
                     let config = try AgentConfiguration.fromEnvironment()
                     let agent = try LLMChat(configuration: config)
-                    _ = try await agent.execute(goal: goal)
+                    _ = try await agent.run(goal: goal)
                     currentTranscript = await agent.transcript
                     currentStatus = await agent.status
 
@@ -200,13 +200,13 @@ struct DashboardView: View {
                     let config = try AgentConfiguration.fromEnvironment()
                     let agent = try StreamingChatAgent(configuration: config)
                     currentTranscript = await agent.transcript
-                    _ = try await agent.execute(goal: goal)
+                    _ = try await agent.run(goal: goal)
                     currentStatus = await agent.status
 
                 case .toolUsing:
                     let config = try AgentConfiguration.fromEnvironment()
                     let agent = try ToolUsingAgent(configuration: config)
-                    _ = try await agent.execute(goal: goal)
+                    _ = try await agent.run(goal: goal)
                     currentTranscript = await agent.transcript
                     currentStatus = await agent.status
                 }

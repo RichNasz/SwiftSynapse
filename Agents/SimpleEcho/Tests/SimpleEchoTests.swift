@@ -2,11 +2,12 @@
 // Do not edit manually — update the spec and re-generate
 
 import Testing
+import SwiftSynapseMacrosClient
 @testable import SimpleEchoAgent
 
 @Test func simpleEchoProducesExpectedTranscript() async throws {
     let agent = SimpleEcho()
-    let result = try await agent.execute(goal: "test")
+    let result = try await agent.run(goal: "test")
     #expect(result == "Echo from SwiftSynapse: test")
     let entries = await agent.transcript.entries
     #expect(entries.count == 2)
@@ -29,8 +30,8 @@ import Testing
 
 @Test func simpleEchoThrowsOnEmptyGoal() async {
     let agent = SimpleEcho()
-    await #expect(throws: SimpleEcho.SimpleEchoError.self) {
-        try await agent.execute(goal: "")
+    await #expect(throws: AgentLifecycleError.self) {
+        try await agent.run(goal: "")
     }
     let status = await agent.status
     guard case .error = status else {

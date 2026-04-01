@@ -20,8 +20,8 @@ import SwiftSynapseMacrosClient
 
 @Test func streamingChatAgentThrowsOnEmptyGoal() async throws {
     let agent = try StreamingChatAgent(serverURL: "http://127.0.0.1:1234/v1/responses", modelName: "test-model")
-    await #expect(throws: StreamingChatAgentError.self) {
-        try await agent.execute(goal: "")
+    await #expect(throws: AgentLifecycleError.self) {
+        try await agent.run(goal: "")
     }
     let status = await agent.status
     guard case .error = status else {
@@ -53,7 +53,7 @@ func streamingChatAgentLiveResponse() async throws {
         serverURL: "http://127.0.0.1:1234/v1/responses",
         modelName: "nvidia/nemotron-3-nano"
     )
-    let result = try await agent.execute(goal: "Reply with the single word OK.")
+    let result = try await agent.run(goal: "Reply with the single word OK.")
     #expect(!result.isEmpty)
 
     let status = await agent.status
@@ -79,7 +79,7 @@ func streamingChatAgentLiveResponse() async throws {
         modelName: "test-model"
     )
     do {
-        _ = try await agent.execute(goal: "Hello")
+        _ = try await agent.run(goal: "Hello")
         Issue.record("Expected an error to be thrown")
     } catch {
         // Error expected

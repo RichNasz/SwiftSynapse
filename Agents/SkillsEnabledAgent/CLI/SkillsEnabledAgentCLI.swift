@@ -31,7 +31,7 @@ struct SkillsEnabledAgentCLI: AsyncParsableCommand {
             apiKey: apiKey
         ))
         let agent = try SkillsEnabledAgent(configuration: config)
-        let result = try await agent.execute(goal: goal)
+        let result = try await agent.run(goal: goal)
         print(result)
     }
 }

@@ -5,7 +5,6 @@ import Foundation
 import SwiftSynapseMacrosClient
 
 public enum RetryingLLMChatAgentError: Error, Sendable {
-    case emptyGoal
     case noResponseContent
 }
 
@@ -26,35 +25,19 @@ public actor RetryingLLMChatAgent {
     }
 
     public func execute(goal: String) async throws -> String {
-        guard !goal.isEmpty else {
-            _status = .error(RetryingLLMChatAgentError.emptyGoal)
-            throw RetryingLLMChatAgentError.emptyGoal
-        }
-
-        _status = .running
-        _transcript.reset()
-
         let client = try config.buildLLMClient()
         let agent = Agent(client: client, model: config.modelName)
 
-        let result: String
-        do {
-            result = try await retryWithBackoff(maxAttempts: config.maxRetries) {
-                await agent.reset()
-                return try await agent.send(goal)
-            }
-        } catch {
-            _status = .error(error)
-            throw error
+        let result = try await retryWithBackoff(maxAttempts: config.maxRetries) {
+            await agent.reset()
+            return try await agent.send(goal)
         }
 
         guard !result.isEmpty else {
-            _status = .error(RetryingLLMChatAgentError.noResponseContent)
             throw RetryingLLMChatAgentError.noResponseContent
         }
 
         _transcript.sync(from: await agent.transcript)
-        _status = .completed(result)
         return result
     }
 }

@@ -34,7 +34,7 @@ struct LLMChatPersonasCLI: AsyncParsableCommand {
             apiKey: apiKey
         ))
         let agent = try LLMChatPersonas(configuration: config)
-        let result = try await agent.execute(goal: goal, persona: persona)
+        let result = try await agent.runWithPersona(goal: goal, persona: persona)
 
         if let persona, let initial = await agent.lastInitialResponse {
             print("--- Original Response ---")

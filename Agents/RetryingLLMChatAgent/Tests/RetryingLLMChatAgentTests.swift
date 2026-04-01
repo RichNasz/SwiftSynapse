@@ -20,8 +20,8 @@ import SwiftSynapseMacrosClient
 
 @Test func retryingAgentThrowsOnEmptyGoal() async throws {
     let agent = try RetryingLLMChatAgent(serverURL: "http://127.0.0.1:1234/v1/responses", modelName: "test-model")
-    await #expect(throws: RetryingLLMChatAgentError.self) {
-        try await agent.execute(goal: "")
+    await #expect(throws: AgentLifecycleError.self) {
+        try await agent.run(goal: "")
     }
     let status = await agent.status
     guard case .error = status else {
@@ -59,7 +59,7 @@ func retryingAgentLiveResponse() async throws {
         modelName: "nvidia/nemotron-3-nano",
         maxRetries: 3
     )
-    let result = try await agent.execute(goal: "Reply with the single word OK.")
+    let result = try await agent.run(goal: "Reply with the single word OK.")
     #expect(!result.isEmpty)
 
     let status = await agent.status
@@ -81,7 +81,7 @@ func retryingAgentLiveResponse() async throws {
         maxRetries: 3
     )
     do {
-        _ = try await agent.execute(goal: "Hello")
+        _ = try await agent.run(goal: "Hello")
         Issue.record("Expected an error to be thrown")
     } catch {
         // Error should propagate — that's correct

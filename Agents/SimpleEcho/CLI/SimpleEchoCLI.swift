@@ -16,7 +16,7 @@ struct SimpleEchoCLI: AsyncParsableCommand {
 
     func run() async throws {
         let agent = SimpleEcho()
-        let result = try await agent.execute(goal: goal)
+        let result = try await agent.run(goal: goal)
         print(result)
     }
 }

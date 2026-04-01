@@ -20,8 +20,8 @@ import SwiftSynapseMacrosClient
 
 @Test func runThrowsOnEmptyGoal() async throws {
     let agent = try LLMChatPersonas(serverURL: "http://127.0.0.1:1234/v1/responses", modelName: "test-model")
-    await #expect(throws: LLMChatPersonasError.self) {
-        try await agent.execute(goal: "")
+    await #expect(throws: AgentLifecycleError.self) {
+        try await agent.run(goal: "")
     }
     let status = await agent.status
     guard case .error = status else {
@@ -49,7 +49,7 @@ func llmChatPersonasLiveWithoutPersona() async throws {
         serverURL: "http://127.0.0.1:1234/v1/responses",
         modelName: "nvidia/nemotron-3-nano"
     )
-    let result = try await agent.execute(goal: "Reply with the single word OK.")
+    let result = try await agent.run(goal: "Reply with the single word OK.")
     #expect(!result.isEmpty)
 
     let status = await agent.status
@@ -69,7 +69,7 @@ func llmChatPersonasLiveWithPersona() async throws {
         serverURL: "http://127.0.0.1:1234/v1/responses",
         modelName: "nvidia/nemotron-3-nano"
     )
-    let result = try await agent.execute(goal: "What is 2+2?", persona: "pirate")
+    let result = try await agent.runWithPersona(goal: "What is 2+2?", persona: "pirate")
     #expect(!result.isEmpty)
 
     let status = await agent.status

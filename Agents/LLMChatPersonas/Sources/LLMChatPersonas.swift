@@ -5,7 +5,6 @@ import Foundation
 import SwiftSynapseMacrosClient
 
 public enum LLMChatPersonasError: Error, Sendable {
-    case emptyGoal
     case noResponseContent
     case noPersonaResponseContent
 }
@@ -14,6 +13,7 @@ public enum LLMChatPersonasError: Error, Sendable {
 public actor LLMChatPersonas {
     private let config: AgentConfiguration
     public private(set) var lastInitialResponse: String?
+    private var _pendingPersona: String?
 
     public init(configuration: AgentConfiguration) throws {
         self.config = configuration
@@ -27,31 +27,25 @@ public actor LLMChatPersonas {
         try self.init(configuration: config)
     }
 
-    public func execute(goal: String, persona: String? = nil) async throws -> String {
-        guard !goal.isEmpty else {
-            _status = .error(LLMChatPersonasError.emptyGoal)
-            throw LLMChatPersonasError.emptyGoal
-        }
-        _status = .running
-        _transcript.reset()
+    /// Entry point with persona support. Sets the persona before delegating to the macro-generated `run(goal:)`.
+    public func runWithPersona(goal: String, persona: String?) async throws -> String {
+        _pendingPersona = persona
+        return try await run(goal: goal)
+    }
 
+    public func execute(goal: String) async throws -> String {
+        let persona = _pendingPersona
+        _pendingPersona = nil
         let client = try config.buildLLMClient()
         let agent = Agent(client: client, model: config.modelName)
 
         // First call: get initial response
-        let initialResponse: String
-        do {
-            initialResponse = try await retryWithBackoff(maxAttempts: config.maxRetries) {
-                await agent.reset()
-                return try await agent.send(goal)
-            }
-        } catch {
-            _status = .error(error)
-            throw error
+        let initialResponse = try await retryWithBackoff(maxAttempts: config.maxRetries) {
+            await agent.reset()
+            return try await agent.send(goal)
         }
 
         guard !initialResponse.isEmpty else {
-            _status = .error(LLMChatPersonasError.noResponseContent)
             throw LLMChatPersonasError.noResponseContent
         }
 
@@ -59,29 +53,19 @@ public actor LLMChatPersonas {
 
         guard let persona else {
             _transcript.sync(from: await agent.transcript)
-            _status = .completed(initialResponse)
             return initialResponse
         }
 
         // Second call: persona rewrite (chains via Agent's lastResponseId)
         let personaPrompt = "Rewrite your previous response in the style and voice of \(persona). Preserve all factual content but express it exactly as \(persona) would speak."
-        let personaResponse: String
-        do {
-            personaResponse = try await agent.send(personaPrompt)
-        } catch {
-            _transcript.sync(from: await agent.transcript)
-            _status = .error(error)
-            throw error
-        }
+        let personaResponse = try await agent.send(personaPrompt)
 
         guard !personaResponse.isEmpty else {
             _transcript.sync(from: await agent.transcript)
-            _status = .error(LLMChatPersonasError.noPersonaResponseContent)
             throw LLMChatPersonasError.noPersonaResponseContent
         }
 
         _transcript.sync(from: await agent.transcript)
-        _status = .completed(personaResponse)
         return personaResponse
     }
 }

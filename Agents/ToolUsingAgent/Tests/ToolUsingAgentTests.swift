@@ -20,8 +20,8 @@ import SwiftSynapseMacrosClient
 
 @Test func toolUsingAgentThrowsOnEmptyGoal() async throws {
     let agent = try ToolUsingAgent(serverURL: "http://127.0.0.1:1234/v1/responses", modelName: "test-model")
-    await #expect(throws: ToolUsingAgentError.self) {
-        try await agent.execute(goal: "")
+    await #expect(throws: AgentLifecycleError.self) {
+        try await agent.run(goal: "")
     }
     let status = await agent.status
     guard case .error = status else {
@@ -41,48 +41,80 @@ import SwiftSynapseMacrosClient
     #expect(entries.isEmpty)
 }
 
-@Test func calculatorToolReturnsResult() throws {
-    let data = Data(#"{"expression":"10 + 5"}"#.utf8)
-    let result = try ToolUsingAgent.calculate(data: data)
+// MARK: - Tool Unit Tests
+
+@Test func calculatorToolReturnsResult() async throws {
+    let tool = CalculateTool()
+    let result = try await tool.execute(input: .init(expression: "10 + 5"))
     #expect(result == "15.0")
 }
 
-@Test func calculatorToolDivision() throws {
-    let data = Data(#"{"expression":"144 / 12"}"#.utf8)
-    let result = try ToolUsingAgent.calculate(data: data)
+@Test func calculatorToolDivision() async throws {
+    let tool = CalculateTool()
+    let result = try await tool.execute(input: .init(expression: "144 / 12"))
     #expect(result == "12.0")
 }
 
-@Test func converterToolMilesToKilometers() throws {
-    let data = Data(#"{"value":100,"fromUnit":"miles","toUnit":"kilometers"}"#.utf8)
-    let result = try ToolUsingAgent.convertUnit(data: data)
+@Test func converterToolMilesToKilometers() async throws {
+    let tool = ConvertUnitTool()
+    let result = try await tool.execute(input: .init(value: 100, fromUnit: "miles", toUnit: "kilometers"))
     #expect(result == "160.9344")
 }
 
-@Test func converterToolCelsiusToFahrenheit() throws {
-    let data = Data(#"{"value":100,"fromUnit":"celsius","toUnit":"fahrenheit"}"#.utf8)
-    let result = try ToolUsingAgent.convertUnit(data: data)
+@Test func converterToolCelsiusToFahrenheit() async throws {
+    let tool = ConvertUnitTool()
+    let result = try await tool.execute(input: .init(value: 100, fromUnit: "celsius", toUnit: "fahrenheit"))
     #expect(result == "212.0000")
 }
 
-@Test func converterToolInvalidUnitThrows() {
-    let data = Data(#"{"value":100,"fromUnit":"parsecs","toUnit":"kilometers"}"#.utf8)
-    #expect(throws: ToolUsingAgentError.self) {
-        _ = try ToolUsingAgent.convertUnit(data: data)
+@Test func converterToolInvalidUnitThrows() async {
+    let tool = ConvertUnitTool()
+    await #expect(throws: ToolUsingAgentError.self) {
+        _ = try await tool.execute(input: .init(value: 100, fromUnit: "parsecs", toUnit: "kilometers"))
     }
 }
 
-@Test func formatNumberTool() throws {
-    let data = Data(#"{"value":3.14159265,"decimalPlaces":2}"#.utf8)
-    let result = try ToolUsingAgent.formatNumber(data: data)
+@Test func formatNumberTool() async throws {
+    let tool = FormatNumberTool()
+    let result = try await tool.execute(input: .init(value: 3.14159265, decimalPlaces: 2))
     #expect(result == "3.14")
 }
 
-@Test func formatNumberToolClamps() throws {
-    let data = Data(#"{"value":3.14,"decimalPlaces":15}"#.utf8)
-    let result = try ToolUsingAgent.formatNumber(data: data)
+@Test func formatNumberToolClamps() async throws {
+    let tool = FormatNumberTool()
+    let result = try await tool.execute(input: .init(value: 3.14, decimalPlaces: 15))
     // Should clamp to 10 decimal places
     #expect(result == "3.1400000000")
+}
+
+// MARK: - Tool Registry Tests
+
+@Test func toolRegistryDispatchesCorrectly() async throws {
+    let registry = ToolRegistry()
+    registry.register(CalculateTool())
+    registry.register(ConvertUnitTool())
+    registry.register(FormatNumberTool())
+
+    let result = try await registry.dispatch(
+        name: "calculate",
+        callId: "test-1",
+        arguments: #"{"expression":"2 + 2"}"#
+    )
+    #expect(result.success)
+    #expect(result.output == "4.0")
+}
+
+@Test func toolRegistryThrowsOnUnknownTool() async {
+    let registry = ToolRegistry()
+    registry.register(CalculateTool())
+
+    await #expect(throws: ToolDispatchError.self) {
+        _ = try await registry.dispatch(
+            name: "nonexistent",
+            callId: "test-1",
+            arguments: "{}"
+        )
+    }
 }
 
 // MARK: - Live Integration Tests
@@ -93,7 +125,7 @@ func toolUsingAgentLiveResponse() async throws {
         serverURL: "http://127.0.0.1:1234/v1/responses",
         modelName: "nvidia/nemotron-3-nano"
     )
-    let result = try await agent.execute(goal: "Convert 100 miles to kilometers")
+    let result = try await agent.run(goal: "Convert 100 miles to kilometers")
     #expect(!result.isEmpty)
 
     let status = await agent.status

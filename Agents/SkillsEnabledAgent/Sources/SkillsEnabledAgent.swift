@@ -5,7 +5,6 @@ import Foundation
 import SwiftSynapseMacrosClient
 
 public enum SkillsEnabledAgentError: Error, Sendable {
-    case emptyGoal
     case noResponseContent
 }
 
@@ -20,13 +19,6 @@ public actor SkillsEnabledAgent {
     }
 
     public func execute(goal: String) async throws -> String {
-        guard !goal.isEmpty else {
-            _status = .error(SkillsEnabledAgentError.emptyGoal)
-            throw SkillsEnabledAgentError.emptyGoal
-        }
-
-        _status = .running
-        _transcript.reset()
         _transcript.append(.userMessage(goal))
 
         // Discover skills from standard filesystem locations
@@ -43,21 +35,13 @@ public actor SkillsEnabledAgent {
             Skills(store: store)
         }
 
-        let result: String
-        do {
-            result = try await agent.send(goal)
-        } catch {
-            _status = .error(error)
-            throw error
-        }
+        let result = try await agent.send(goal)
 
         guard !result.isEmpty else {
-            _status = .error(SkillsEnabledAgentError.noResponseContent)
             throw SkillsEnabledAgentError.noResponseContent
         }
 
         _transcript.append(.assistantMessage(result))
-        _status = .completed(result)
         return result
     }
 }
