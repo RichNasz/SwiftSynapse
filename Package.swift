@@ -187,7 +187,7 @@ let package = Package(
                 "StreamingChatAgentAgent",
                 "ToolUsingAgentAgent",
                 .product(name: "SwiftSynapseHarness", package: "SwiftSynapseHarness"),
-                .product(name: "SwiftSynapseUI", package: "SwiftSynapseMacros"),
+                .product(name: "SwiftSynapseUI", package: "SwiftSynapseHarness"),
             ],
             path: "Apps/AgentDashboard"
         ),
