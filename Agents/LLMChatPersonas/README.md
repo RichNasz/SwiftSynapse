@@ -143,7 +143,7 @@ Tests validate:
 
 ## Constraints
 
-- Imports `SwiftSynapseMacrosClient`; no raw `URLSession` or OpenAI SDK
+- Imports `SwiftSynapseHarness`; no raw `URLSession` or OpenAI SDK
 - Endpoint must be an Open Responses API-compatible `/v1/responses` URL (not `/v1/chat/completions`)
 - Both `RequestTimeout` and `ResourceTimeout` are set to 300 seconds for both LLM calls
 - The persona prompt does **not** embed the full initial response text — it relies on `PreviousResponseId` conversation threading

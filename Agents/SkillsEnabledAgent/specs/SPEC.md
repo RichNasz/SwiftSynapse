@@ -37,5 +37,5 @@ Each skill directory contains a `skill.md` with YAML frontmatter and Markdown in
 ## Dependencies
 
 - `AgentConfiguration` (shared harness)
-- `SkillStore` / `SkillsAgent` / `Skills` (from SwiftOpenSkills via SwiftSynapseMacrosClient)
-- `LLMClient` (from SwiftOpenResponsesDSL via SwiftSynapseMacrosClient)
+- `SkillStore` / `SkillsAgent` / `Skills` (from SwiftOpenSkills via SwiftSynapseHarness)
+- `LLMClient` (from SwiftOpenResponsesDSL via SwiftSynapseHarness)

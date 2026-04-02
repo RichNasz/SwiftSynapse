@@ -125,7 +125,7 @@ Tests validate:
 
 ## Constraints
 
-- Imports `SwiftSynapseMacrosClient`; no raw `URLSession` or OpenAI SDK
+- Imports `SwiftSynapseHarness`; no raw `URLSession` or OpenAI SDK
 - Endpoint must be an Open Responses API-compatible `/v1/responses` URL (not `/v1/chat/completions`)
 - Both `RequestTimeout` and `ResourceTimeout` are set to 300 seconds to accommodate slow local LLM inference
 - No data persistence; server URL and model are init-time, not per-request

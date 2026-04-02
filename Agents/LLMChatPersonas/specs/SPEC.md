@@ -6,15 +6,13 @@ Extend LLMChat with an optional two-step LLM pipeline: first get a plain respons
 
 ---
 
-## Configuration (constructor parameters)
+## Configuration
 
-| Parameter    | Type      | Default | Description                            |
-|--------------|-----------|---------|----------------------------------------|
-| `serverURL`  | `String`  | —       | Full URL of an Open Responses API endpoint (e.g. `http://127.0.0.1:1234/v1/responses`) |
-| `modelName`  | `String`  | —       | Model identifier (e.g. `llama3`, `gpt-4o`) |
-| `apiKey`     | `String?` | `nil`   | Optional API key for authentication    |
+| Parameter       | Type                 | Default | Description                            |
+|-----------------|----------------------|---------|----------------------------------------|
+| `configuration` | `AgentConfiguration` | —       | Server URL, model, API key, timeout    |
 
-URL validation occurs at init time; throws `LLMChatPersonasError.invalidServerURL` if the string is empty, unparseable, or uses a non-http/https scheme.
+Uses the shared `AgentConfiguration` type (see `Shared-Configuration.md`). URL and model validation occurs at init time via `AgentConfigurationError`.
 
 ---
 
@@ -53,7 +51,6 @@ URL validation occurs at init time; throws `LLMChatPersonasError.invalidServerUR
 | Case                        | Thrown when                                        |
 |-----------------------------|----------------------------------------------------|
 | `emptyGoal`                 | `goal` is an empty string                          |
-| `invalidServerURL`          | `serverURL` is empty, unparseable, or non-http/https |
 | `noResponseContent`         | The first model reply is empty or missing          |
 | `noPersonaResponseContent`  | The persona-rewrite reply is empty or missing      |
 
@@ -74,11 +71,11 @@ The final LLM reply as a `String` (persona-rewritten if a persona was provided, 
 
 ## Constraints
 
-- Import `SwiftOpenResponsesDSL` and `SwiftSynapseMacrosClient`; no raw URLSession or OpenAI SDK.
+- Import `SwiftSynapseHarness`; no raw URLSession or OpenAI SDK.
 - Endpoint must be an Open Responses API-compatible `/v1/responses` URL (not `/v1/chat/completions`).
 - Request and resource timeouts must both be set to 300 seconds for both LLM calls.
 - No data persistence.
-- Server URL and model are init-time, not per-request.
+- Configuration is init-time via `AgentConfiguration`, not per-request.
 
 ---
 
@@ -88,5 +85,5 @@ The final LLM reply as a `String` (persona-rewritten if a persona was provided, 
 - Without persona: transcript has exactly 2 entries.
 - With persona: transcript has exactly 4 entries.
 - Throws `LLMChatPersonasError.emptyGoal` when goal is `""`.
-- Throws `LLMChatPersonasError.invalidServerURL` when the URL string is malformed or non-http/https.
+- Throws `AgentConfigurationError` for invalid URL or configuration.
 - Propagates network/server errors from `LLMClient`.

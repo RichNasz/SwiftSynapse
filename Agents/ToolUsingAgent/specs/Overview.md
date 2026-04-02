@@ -51,7 +51,6 @@ public actor ToolUsingAgent {
 
 1. Primary init takes `AgentConfiguration` (already validated).
 2. No stored `_llmClient` — client built fresh in `execute()` for Agent construction.
-3. Legacy convenience init `(serverURL:modelName:apiKey:maxRetries:)` creates an `AgentConfiguration` and delegates.
 
 ---
 

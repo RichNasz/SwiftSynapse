@@ -29,7 +29,7 @@ When in doubt, use `false`. Correctness is more important than parallelism.
 
 ## ToolExecutor Actor
 
-The `ToolExecutor` is an actor provided by `SwiftSynapseMacrosClient` that schedules tool calls and returns results in receive order:
+The `ToolExecutor` is an actor provided by `SwiftSynapseHarness` that schedules tool calls and returns results in receive order:
 
 ```swift
 public actor ToolExecutor {
@@ -165,3 +165,13 @@ while true {
 ```
 
 `toolLoopExceeded` is a required case in the error enum of any tool-using agent.
+
+---
+
+## High-Level Alternatives
+
+The manual `ToolExecutor` + dispatch loop pattern above is the low-level approach. For most tool-using agents, prefer:
+
+- **`AgentToolLoop`** — handles the full loop with hooks, permissions, guardrails, recovery, and telemetry integration. See `Shared-Agent-Tool-Loop.md`.
+- **`StreamingToolExecutor`** — dispatches tools concurrently during streaming responses. See `Shared-Streaming-Tool-Executor.md`.
+- **Result truncation** — automatic handling of oversized tool results. See `Shared-Result-Truncation.md`.

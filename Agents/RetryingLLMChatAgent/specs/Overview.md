@@ -18,7 +18,7 @@
 
 - `AgentConfiguration` — centralized config with `maxRetries` validation (1–10)
 - `Agent` — from SwiftOpenResponsesDSL; handles LLM communication and transcript
-- `retryWithBackoff` — **shared free function** from SwiftSynapseMacrosClient
+- `retryWithBackoff` — **shared free function** from SwiftSynapseHarness
 - `@SpecDrivenAgent` macro — generates `_status`, `_transcript`, `status`, `transcript`
 - `AgentConfigurationError` — replaces per-agent `invalidServerURL` and `invalidConfiguration` cases
 
@@ -52,7 +52,6 @@ public actor RetryingLLMChatAgent {
 
 1. Primary init takes `AgentConfiguration` (already validated, including `maxRetries` 1–10).
 2. Validates client can be built via `configuration.buildLLMClient()` (fail-fast).
-3. Legacy convenience init `(serverURL:modelName:apiKey:maxRetries:)` creates an `AgentConfiguration` and delegates.
 
 ---
 

@@ -11,7 +11,6 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/RichNasz/SwiftSynapseHarness", branch: "main"),
-        .package(url: "https://github.com/RichNasz/SwiftSynapseMacros", branch: "main"),
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.5.0"),
     ],
     targets: [
@@ -178,6 +177,126 @@ let package = Package(
                 .product(name: "SwiftSynapseHarness", package: "SwiftSynapseHarness"),
             ],
             path: "Agents/SkillsEnabledAgent/Tests"
+        ),
+        .target(
+            name: "PRReviewerAgent",
+            dependencies: [
+                .product(name: "SwiftSynapseHarness", package: "SwiftSynapseHarness"),
+            ],
+            path: "Agents/PRReviewer/Sources"
+        ),
+        .executableTarget(
+            name: "pr-reviewer",
+            dependencies: [
+                "PRReviewerAgent",
+                .product(name: "SwiftSynapseHarness", package: "SwiftSynapseHarness"),
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ],
+            path: "Agents/PRReviewer/CLI"
+        ),
+        .testTarget(
+            name: "PRReviewerTests",
+            dependencies: [
+                "PRReviewerAgent",
+                .product(name: "SwiftSynapseHarness", package: "SwiftSynapseHarness"),
+            ],
+            path: "Agents/PRReviewer/Tests"
+        ),
+        .target(
+            name: "PerformanceOptimizerAgent",
+            dependencies: [
+                .product(name: "SwiftSynapseHarness", package: "SwiftSynapseHarness"),
+            ],
+            path: "Agents/PerformanceOptimizer/Sources"
+        ),
+        .executableTarget(
+            name: "performance-optimizer",
+            dependencies: [
+                "PerformanceOptimizerAgent",
+                .product(name: "SwiftSynapseHarness", package: "SwiftSynapseHarness"),
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ],
+            path: "Agents/PerformanceOptimizer/CLI"
+        ),
+        .testTarget(
+            name: "PerformanceOptimizerTests",
+            dependencies: [
+                "PerformanceOptimizerAgent",
+                .product(name: "SwiftSynapseHarness", package: "SwiftSynapseHarness"),
+            ],
+            path: "Agents/PerformanceOptimizer/Tests"
+        ),
+        .target(
+            name: "ResearchAssistantAgent",
+            dependencies: [
+                .product(name: "SwiftSynapseHarness", package: "SwiftSynapseHarness"),
+            ],
+            path: "Agents/ResearchAssistant/Sources"
+        ),
+        .executableTarget(
+            name: "research-assistant",
+            dependencies: [
+                "ResearchAssistantAgent",
+                .product(name: "SwiftSynapseHarness", package: "SwiftSynapseHarness"),
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ],
+            path: "Agents/ResearchAssistant/CLI"
+        ),
+        .testTarget(
+            name: "ResearchAssistantTests",
+            dependencies: [
+                "ResearchAssistantAgent",
+                .product(name: "SwiftSynapseHarness", package: "SwiftSynapseHarness"),
+            ],
+            path: "Agents/ResearchAssistant/Tests"
+        ),
+        .target(
+            name: "TaskPlannerAgent",
+            dependencies: [
+                .product(name: "SwiftSynapseHarness", package: "SwiftSynapseHarness"),
+            ],
+            path: "Agents/TaskPlanner/Sources"
+        ),
+        .executableTarget(
+            name: "task-planner",
+            dependencies: [
+                "TaskPlannerAgent",
+                .product(name: "SwiftSynapseHarness", package: "SwiftSynapseHarness"),
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ],
+            path: "Agents/TaskPlanner/CLI"
+        ),
+        .testTarget(
+            name: "TaskPlannerTests",
+            dependencies: [
+                "TaskPlannerAgent",
+                .product(name: "SwiftSynapseHarness", package: "SwiftSynapseHarness"),
+            ],
+            path: "Agents/TaskPlanner/Tests"
+        ),
+        .target(
+            name: "DataPipelineAgentAgent",
+            dependencies: [
+                .product(name: "SwiftSynapseHarness", package: "SwiftSynapseHarness"),
+            ],
+            path: "Agents/DataPipelineAgent/Sources"
+        ),
+        .executableTarget(
+            name: "data-pipeline-agent",
+            dependencies: [
+                "DataPipelineAgentAgent",
+                .product(name: "SwiftSynapseHarness", package: "SwiftSynapseHarness"),
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ],
+            path: "Agents/DataPipelineAgent/CLI"
+        ),
+        .testTarget(
+            name: "DataPipelineAgentTests",
+            dependencies: [
+                "DataPipelineAgentAgent",
+                .product(name: "SwiftSynapseHarness", package: "SwiftSynapseHarness"),
+            ],
+            path: "Agents/DataPipelineAgent/Tests"
         ),
         .executableTarget(
             name: "AgentDashboard",

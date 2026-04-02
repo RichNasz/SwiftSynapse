@@ -59,7 +59,7 @@ public protocol TelemetrySink: AnyObject, Sendable {
 
 - Synchronous (`func`, not `async func`) — the agent must not block on telemetry.
 - Implementations are responsible for their own batching, persistence, or forwarding.
-- A no-op implementation (`NullTelemetrySink`) is provided by `SwiftSynapseMacrosClient` for testing.
+- A no-op implementation (`NullTelemetrySink`) is provided by `SwiftSynapseHarness` for testing.
 
 ---
 
@@ -135,6 +135,32 @@ class AppTelemetry: TelemetrySink {
 let agent = try LLMChat(configuration: config)
 await agent.configure(telemetry: AppTelemetry())
 ```
+
+---
+
+## Extended Event Types
+
+The harness provides additional telemetry event kinds beyond the base set above:
+
+| Event | Trait | Description |
+|-------|-------|-------------|
+| `tokenBudgetExhausted` | Core | Context budget exceeded |
+| `guardrailTriggered` | Safety | Guardrail policy activated |
+| `contextCompacted` | Resilience | Transcript compression occurred |
+| `apiErrorClassified` | Resilience | API error categorized |
+| `pluginActivated(name:)` | Plugins | Plugin activated successfully |
+| `pluginError(name:error:)` | Plugins | Plugin activation/execution failed |
+
+---
+
+## Built-in Sinks
+
+| Sink | Description |
+|------|-------------|
+| `OSLogTelemetrySink` | Logs events to unified logging system (`os_log`) |
+| `InMemoryTelemetrySink` | Collects events in memory — useful for test assertions |
+| `CompositeTelemetrySink` | Fan-out to multiple sinks |
+| `CostTrackingTelemetrySink` | Automatic cost recording from `.llmCallMade` events (see `Shared-Cost-Tracking.md`) |
 
 ---
 

@@ -93,9 +93,9 @@ Generate a `README.md` for each agent in `Agents/<AgentName>/`. The README is de
 - Tree view of the agent's directory:
   ```
   Agents/<AgentName>/
-  ├── SPEC.md
   ├── README.md
-  ├── CodeGen/
+  ├── specs/
+  │   ├── SPEC.md
   │   └── Overview.md
   ├── Sources/
   │   └── <AgentName>.swift
@@ -106,11 +106,15 @@ Generate a `README.md` for each agent in `Agents/<AgentName>/`. The README is de
   ```
 - Adjust to match actual files present (e.g., omit tools file if agent has no tools)
 
-### 12. Related
+### 12. License
+
+- Single line: "MIT License — see the root [LICENSE](../../LICENSE) for details."
+
+### 13. Related
 
 - Links to:
-  - `SPEC.md` — agent specification
-  - `CodeGen/Overview.md` — generation rules
+  - `specs/SPEC.md` — agent specification
+  - `specs/Overview.md` — generation rules
   - Root `README.md` — project overview
 
 ## Constraints

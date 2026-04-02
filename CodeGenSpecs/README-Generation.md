@@ -32,19 +32,23 @@ This README is the primary entry point for visitors, explaining the project, sho
    - 4–6 sentences describing:
      - What SwiftSynapse is (showcase + macro-powered agent framework)
      - Core value (native Swift agents with observability, background execution, on-device priority)
-     - Built using SwiftSynapseMacros, SwiftOpenResponsesDSL, SwiftLLMToolMacros
+     - Built using SwiftSynapseHarness (which re-exports SwiftOpenResponsesDSL, SwiftLLMToolMacros, and SwiftOpenSkills)
      - AI-first workflow: all code generated from specs via Claude Code
 
 3. **Key Features**
-   - Bullet list (6–8 items) with bold keywords:
+   - Bullet list (10–12 items) with bold keywords:
      - **Spec-Driven Development** — agents defined via Markdown specs
      - **Observable Agents** — live transcript of reasoning/tool calls in SwiftUI
+     - **Modular Harness** — Package Traits (SE-0450) for opt-in capabilities
      - **Background Execution** — continue tasks after app backgrounds
      - **Type-Safe Tools** — compile-time macros for zero manual schema errors
+     - **Hook-Driven Lifecycle** — 16 interception points for logging, gating, and audit
+     - **Permissions & Guardrails** — policy-based tool access and content safety (PII/secret detection)
+     - **Self-Healing** — recovery strategies for context overflow and output truncation
      - **On-Device Priority** — Foundation Models framework where supported
      - **Hybrid Cloud Fallback** — OpenAI-compatible endpoints when needed
+     - **Multi-Agent Coordination** — DAG-based workflows with subagent spawning
      - **Pure Swift** — no external runtimes or Python bridges
-     - **Apple-Native** — SwiftUI interfaces, actors, concurrency
 
 4. **Quick Start**
    - Clone command
@@ -53,14 +57,26 @@ This README is the primary entry point for visitors, explaining the project, sho
    - One short code snippet showing agent invocation (e.g., goal → run → transcript update)
 
 5. **Agent Examples**
-   - Table format:
-     | Agent                  | Description                                      | Key Patterns Demonstrated                  |
+   - Two tables: Foundation Agents and Advanced Agents
+   - Foundation Agents table:
+     | Agent                  | Description                                      | Key Patterns                               |
      |------------------------|--------------------------------------------------|--------------------------------------------|
-     | PRReviewer            | Analyzes GitHub PRs for style/performance/security | Tool calling, structured patches, phases  |
-     | PerformanceOptimizer  | Finds & fixes bottlenecks in Swift code          | Benchmark tools, rewrite suggestions      |
-     | TaskPlanner           | Multi-phase productivity with sub-agents         | Planning, verification, memory            |
-     | ResearchAssistant     | Long-running research with RAG & persistence     | Memory, web tools, sessions               |
-   - Link each to Agents/<Name>/SPEC.md
+     | SimpleEcho             | No-LLM proof of concept                          | @SpecDrivenAgent macro, basic transcript   |
+     | LLMChat                | Single LLM call                                  | AgentConfiguration, cloud inference        |
+     | LLMChatPersonas        | Two-step persona rewrite                         | Conversation threading, multi-turn         |
+     | RetryingLLMChatAgent   | LLM with exponential backoff                     | retryWithBackoff, retry annotations        |
+     | StreamingChatAgent     | Token-by-token streaming                         | Streaming transcript, appendDelta          |
+     | ToolUsingAgent         | Tool dispatch loop                               | AgentToolProtocol, ToolRegistry            |
+     | SkillsEnabledAgent     | agentskills.io integration                       | SkillStore, SkillsAgent, activate_skill    |
+   - Advanced Agents table:
+     | Agent                  | Description                                      | Harness Traits Demonstrated                |
+     |------------------------|--------------------------------------------------|--------------------------------------------|
+     | PRReviewer             | Code review with safety guardrails               | Safety (guardrails, permissions, approval)  |
+     | PerformanceOptimizer   | Self-healing performance analysis                | Resilience (recovery, rate limiting)        |
+     | ResearchAssistant      | Long-running research with memory & MCP          | Persistence, MCP, context management        |
+     | TaskPlanner            | Multi-agent coordination with cost tracking      | MultiAgent, Observability                   |
+     | DataPipelineAgent      | Plugin-extensible data processing                | Plugins                                     |
+   - Link each to Agents/<Name>/specs/SPEC.md
 
 6. **How This Project Is Built (Spec-Driven Workflow)**
    - Explain AI-first approach clearly:
@@ -71,16 +87,31 @@ This README is the primary entry point for visitors, explaining the project, sho
    - Link to VISION.md and example prompt templates
 
 7. **Installation & Usage**
-   - Swift Package Manager dependency on SwiftSynapseMacros (link to its repo)
+   - Swift Package Manager dependency on SwiftSynapseHarness (link to its repo)
    - Brief runtime example (calling an agent in a SwiftUI view)
 
-8. **Contributing**
-   - How to add a new agent: copy TemplateAgent/, write SPEC.md + CodeGen/, generate code
+8. **Agent Harness Capabilities**
+   - Table summarizing key harness subsystems by trait:
+     | Trait | Key Types | Purpose |
+     |-------|-----------|---------|
+     | Core | `AgentToolLoop`, `ToolRegistry`, `SystemPromptBuilder` | Tool dispatch, config, caching |
+     | Hooks | `AgentHookPipeline`, `ClosureHook` | Lifecycle interception |
+     | Safety | `PermissionGate`, `GuardrailPipeline` | Tool access control, content safety |
+     | Resilience | `RecoveryChain`, `RateLimitState` | Self-healing, rate limiting |
+     | Observability | `TelemetrySink`, `CostTracker` | Metrics, cost tracking |
+     | Persistence | `FileSessionStore`, `MemoryStore` | Session resume, agent memory |
+     | MultiAgent | `CoordinationRunner`, `SubagentRunner` | Multi-agent workflows |
+     | MCP | `MCPManager`, `MCPToolBridge` | External data sources |
+     | Plugins | `PluginManager`, `AgentPlugin` | Modular extensions |
+   - Link to SwiftSynapseHarness docs for details
+
+9. **Contributing**
+   - How to add a new agent: copy TemplateAgent/, write SPEC.md + specs/Overview.md, generate code
    - PR guidelines: focus on spec quality, generated code only
 
-9. **License & Links**
-   - MIT License
-   - Related repos: SwiftSynapseMacros, SwiftOpenResponsesDSL, SwiftLLMToolMacros
+10. **License & Links**
+   - MIT License (link to LICENSE file)
+   - Related repos: SwiftSynapseHarness, SwiftOpenResponsesDSL, SwiftLLMToolMacros, SwiftOpenSkills
    - Optional: X handle (@naszcyniec)
 
 ## Visual & Formatting Requirements
@@ -94,13 +125,13 @@ This README is the primary entry point for visitors, explaining the project, sho
 - Do NOT claim support for platforms/OS versions without Foundation Models / Apple Intelligence (e.g., no iOS 18–25 claims)
 - Emphasize Swift 6.2+ strict concurrency
 - Mention on-device priority only where supported (iOS 26+, macOS 26+, visionOS 2.4+)
-- No external dependencies beyond the core three packages
+- No external dependencies beyond SwiftSynapseHarness (which bundles all sub-packages)
 - Include header comment at top of generated README:
   <!-- Generated from CodeGenSpecs/README-Generation.md – Do not edit manually. Update spec and re-generate. -->
 
 ## Output Instructions
 - Generate the complete README.md content only
 - Do not include YAML, front-matter, or non-Markdown
-- Use current date (March 2026) if freshness note needed
+- Use current date (April 2026) if freshness note needed
 
 Generate the full README.md now.

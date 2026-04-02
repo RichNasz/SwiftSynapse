@@ -68,3 +68,38 @@ if let calls = response.firstFunctionCalls {
 2. Match `FunctionCallItem.name` against each tool's `name` static property.
 3. Decode arguments with `call.decodeArguments() as ToolType.Arguments`.
 4. Call `tool.call(arguments:)` and surface the result as `ToolOutput.content`.
+
+---
+
+## AgentToolProtocol (Typed Tool Registration)
+
+For agents using `ToolRegistry` and `AgentToolLoop` (recommended for new tool-using agents), tools conform to `AgentToolProtocol`:
+
+```swift
+public protocol AgentToolProtocol: Sendable {
+    associatedtype Input: Codable & Sendable
+    associatedtype Output: Codable & Sendable
+    static var name: String { get }
+    static var description: String { get }
+    static var inputSchema: FunctionToolParam { get }
+    var isConcurrencySafe: Bool { get }
+    func execute(input: Input) async throws -> Output
+}
+```
+
+Tools registered via `ToolRegistry` are dispatched automatically by `AgentToolLoop` — see `Shared-Agent-Tool-Loop.md` for the high-level dispatch pattern. The manual switch-based dispatch above remains valid for simple agents.
+
+---
+
+## ToolRegistry
+
+```swift
+public final class ToolRegistry: @unchecked Sendable {
+    public func register<T: AgentToolProtocol>(_ tool: T)
+    public func definitions() -> [FunctionToolParam]
+    public func dispatch(name: String, arguments: String) async throws -> ToolResult
+    public func dispatchBatch(_ calls: [AgentToolCall]) async throws -> [ToolResult]
+    public var toolNames: [String] { get }
+    public var isEmpty: Bool { get }
+}
+```

@@ -12,7 +12,7 @@ Agents that call `LLMClient.send()` wrap the call in a `retryWithBackoff` helper
 
 ## Retry Helper
 
-The retry helper is a free `async` function defined in `SwiftSynapseMacrosClient` (or a shared utilities module available to all agents):
+The retry helper is a free `async` function defined in `SwiftSynapseHarness` (available to all agents via the single harness import):
 
 ```swift
 public func retryWithBackoff<T: Sendable>(
@@ -168,3 +168,15 @@ public init(configuration: AgentConfiguration) throws {
 - Response content validation (`noResponseContent`) — checked after the retry wrapper
 - Tool calls — each tool manages its own failure handling; the retry layer does not wrap tool dispatch
 - Second-leg LLM calls (e.g., persona rewrite in `LLMChatPersonas`) — each `_llmClient.send()` call is independently wrapped, not the overall pipeline
+
+---
+
+## Rate-Limit-Aware Retry
+
+For APIs that return HTTP 429 with `Retry-After` headers, use `retryWithRateLimit` instead — see `Shared-Rate-Limiting.md`. It wraps `retryWithBackoff` with rate-limit cooldown tracking.
+
+---
+
+## Recovery vs. Retry
+
+Retry handles **transport-level** failures (timeout, network drop, rate limit). Recovery handles **semantic** failures (context window exceeded, output truncated). Recovery strategies (see `Shared-Recovery-Strategy.md`) modify agent state before retrying, while `retryWithBackoff` retries the identical operation. Recovery runs *after* all retries are exhausted.

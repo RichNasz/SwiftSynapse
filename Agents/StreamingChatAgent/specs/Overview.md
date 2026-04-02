@@ -53,7 +53,6 @@ public actor StreamingChatAgent {
 
 1. Primary init takes `AgentConfiguration` (already validated).
 2. Validates client can be built via `configuration.buildLLMClient()` (fail-fast).
-3. Legacy convenience init `(serverURL:modelName:apiKey:)` creates an `AgentConfiguration` and delegates.
 
 ---
 

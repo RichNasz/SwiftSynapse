@@ -6,15 +6,13 @@ Forward a user prompt to an Open Responses API-compatible endpoint and return th
 
 ---
 
-## Configuration (constructor parameters)
+## Configuration
 
-| Parameter    | Type      | Default | Description                            |
-|--------------|-----------|---------|----------------------------------------|
-| `serverURL`  | `String`  | —       | Full URL of an Open Responses API endpoint (e.g. `http://127.0.0.1:1234/v1/responses`) |
-| `modelName`  | `String`  | —       | Model identifier (e.g. `llama3`, `gpt-4o`) |
-| `apiKey`     | `String?` | `nil`   | Optional API key for authentication    |
+| Parameter       | Type                 | Default | Description                            |
+|-----------------|----------------------|---------|----------------------------------------|
+| `configuration` | `AgentConfiguration` | —       | Server URL, model, API key, timeout    |
 
-URL validation occurs at init time; throws `LLMChatError.invalidServerURL` if the string is not a valid URL.
+Uses the shared `AgentConfiguration` type (see `Shared-Configuration.md`). URL and model validation occurs at init time via `AgentConfigurationError`.
 
 ---
 
@@ -42,8 +40,9 @@ URL validation occurs at init time; throws `LLMChatError.invalidServerURL` if th
 | Case                  | Thrown when                                        |
 |-----------------------|----------------------------------------------------|
 | `emptyGoal`           | `goal` is an empty string                          |
-| `invalidServerURL`    | `serverURL` cannot be parsed as a `URL`            |
 | `noResponseContent`   | The model reply is empty or missing                |
+
+URL and configuration validation errors are handled by `AgentConfigurationError` (shared type from `SwiftSynapseHarness`).
 
 ---
 
@@ -61,12 +60,12 @@ The LLM's reply as a `String`.
 
 ## Constraints
 
-- Import `SwiftOpenResponsesDSL` and `SwiftSynapseMacrosClient`; no raw URLSession or OpenAI SDK.
-- All tool definitions (if any) must use `@LLMTool` / `@LLMToolArguments` from `SwiftLLMToolMacros`.
+- Import `SwiftSynapseHarness`; no raw URLSession or OpenAI SDK.
+- All tool definitions (if any) must use `@LLMTool` / `@LLMToolArguments` (available via `SwiftSynapseHarness`).
 - Endpoint must be an Open Responses API-compatible `/v1/responses` URL (not `/v1/chat/completions`).
 - Request and resource timeouts must both be set to 300 seconds (5 minutes) to accommodate slow local LLM inference.
 - No data persistence.
-- Server URL and model are init-time, not per-request.
+- Configuration is init-time via `AgentConfiguration`, not per-request.
 - Must handle empty goal and empty/missing response content.
 
 ---
@@ -76,5 +75,5 @@ The LLM's reply as a `String`.
 - Status is `.completed` after a successful run.
 - Transcript contains exactly 2 entries (user, assistant).
 - Throws `LLMChatError.emptyGoal` when goal is `""`.
-- Throws `LLMChatError.invalidServerURL` when the URL string is malformed.
+- Throws `AgentConfigurationError` for invalid URL or configuration.
 - Propagates network/server errors from `LLMClient`.

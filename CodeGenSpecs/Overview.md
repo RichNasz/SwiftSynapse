@@ -12,20 +12,83 @@ Each file in `CodeGenSpecs/` defines a **shared concern** — a cross-cutting pa
 
 ## Shared Specs
 
+Organized by harness trait (see `VISION.md` for trait system overview):
+
+### Core Trait
 | File | Concern |
 |------|---------|
-| `Shared-Observability.md` | How agent state and transcript are exposed via `@Observable` (`AgentStatus`, `ObservableTranscript`) |
-| `Shared-Background-Execution.md` | How agents integrate with `BGContinuedProcessingTask` and Swift concurrency |
-| `Shared-LLM-Client.md` | The shared LLM client protocol and injection pattern |
-| `Shared-Tool-Registry.md` | How tools are registered, discovered, and dispatched |
-| `Shared-Transcript.md` | The canonical transcript model (`ObservableTranscript`, `TranscriptEntry`) and streaming protocol |
-| `Shared-Foundation-Models.md` | On-device inference via Foundation Models framework, `AgentLLMClient` protocol, hybrid fallback |
+| `Shared-Observability.md` | Observable state via `@Observable` (`AgentStatus`, `ObservableTranscript`) |
+| `Shared-Background-Execution.md` | `BGContinuedProcessingTask` and Swift concurrency integration |
+| `Shared-LLM-Client.md` | Shared LLM client protocol and injection pattern |
+| `Shared-Tool-Registry.md` | Tool definition (`@LLMTool`), `AgentToolProtocol`, `ToolRegistry` dispatch |
+| `Shared-Transcript.md` | Canonical transcript model (`ObservableTranscript`, `TranscriptEntry`), streaming protocol |
+| `Shared-Foundation-Models.md` | On-device inference, `AgentLLMClient` protocol, hybrid fallback |
 | `Shared-Error-Strategy.md` | Error enum conventions, categorization, status-before-throw invariant |
-| `Shared-Retry-Strategy.md` | Exponential backoff retry wrapper for LLM calls |
 | `Shared-Configuration.md` | `AgentConfiguration` shared value type with layered resolution |
+| `Shared-Configuration-Hierarchy.md` | 7-level `ConfigurationResolver`, `ConfigurationSource` protocol, MDM support |
 | `Shared-Tool-Concurrency.md` | Tool scheduling, concurrency safety, result budgeting |
-| `Shared-Telemetry.md` | Opt-in telemetry events and `TelemetrySink` protocol |
+| `Shared-Agent-Tool-Loop.md` | High-level `AgentToolLoop` with hooks, permissions, guardrails, recovery |
+| `Shared-Streaming-Tool-Executor.md` | `StreamingToolExecutor` for concurrent tool dispatch during streaming |
+| `Shared-Context-Management.md` | `ContextBudget`, `TranscriptCompressor` variants (sliding window, importance, auto, composite) |
+| `Shared-System-Prompt-Builder.md` | Prioritized, cacheable `SystemPromptBuilder` |
+| `Shared-Caching.md` | LRU/FIFO tool result caching with TTL |
+| `Shared-Result-Truncation.md` | `ResultTruncator` for oversized tool results |
+| `Shared-Graceful-Shutdown.md` | `GracefulShutdownHandler`, LIFO cleanup on termination |
+
+### Hooks Trait
+| File | Concern |
+|------|---------|
+| `Shared-Hook-System.md` | `AgentHook`, `AgentHookPipeline`, 16 event kinds, `HookAction`, `ClosureHook` |
+
+### Safety Trait
+| File | Concern |
+|------|---------|
+| `Shared-Permission-System.md` | `PermissionGate`, `PermissionPolicy`, `ToolListPolicy`, `ApprovalDelegate` |
+| `Shared-Guardrails.md` | `GuardrailPipeline`, `ContentFilter`, `GuardrailPolicy`, PII/secret detection |
+
+### Resilience Trait
+| File | Concern |
+|------|---------|
+| `Shared-Retry-Strategy.md` | Exponential backoff retry wrapper for LLM calls |
+| `Shared-Rate-Limiting.md` | `RateLimitState`, `retryWithRateLimit`, HTTP 429 cooldown tracking |
+| `Shared-Recovery-Strategy.md` | `RecoveryChain`, compaction/escalation/continuation strategies |
+| `Shared-Conversation-Integrity.md` | `TranscriptIntegrityCheck`, violation detection and repair |
+
+### Observability Trait
+| File | Concern |
+|------|---------|
+| `Shared-Telemetry.md` | `TelemetrySink`, 12 event types, privacy rules, built-in sinks |
+| `Shared-Cost-Tracking.md` | `CostTracker`, `ModelPricing`, `CostTrackingTelemetrySink` |
+
+### Persistence Trait
+| File | Concern |
+|------|---------|
 | `Shared-Session-Resume.md` | `AgentSession` snapshot and `resume(from:)` contract |
+| `Shared-Memory-System.md` | `MemoryStore`, `MemoryEntry`, cross-session agent memory |
+
+### MultiAgent Trait
+| File | Concern |
+|------|---------|
+| `Shared-Multi-Agent-Coordination.md` | `CoordinationRunner`, `SubagentRunner`, shared mailbox, team memory |
+
+### MCP Trait
+| File | Concern |
+|------|---------|
+| `Shared-MCP-Support.md` | `MCPManager`, `MCPToolBridge`, stdio/SSE/WebSocket transports |
+
+### Plugins Trait
+| File | Concern |
+|------|---------|
+| `Shared-Plugin-System.md` | `AgentPlugin`, `PluginManager`, `PluginContext` |
+
+### Testing
+| File | Concern |
+|------|---------|
+| `Shared-VCR-Testing.md` | `VCRRecording`, `VCRMode` for deterministic test replay |
+
+### Documentation
+| File | Concern |
+|------|---------|
 | `README-Generation.md` | Rules for generating the top-level `README.md` |
 | `Agent-README-Generation.md` | Rules for generating per-agent `README.md` files |
 
@@ -38,12 +101,12 @@ Understanding the dependency order is required for correct import decisions:
 | Package | Depends on | Purpose |
 |---------|------------|---------|
 | `SwiftOpenResponsesDSL` | Foundation only | LLM communication — `ResponseRequest`, `LLMClient`, `ResponseObject`, `TranscriptEntry` |
-| `SwiftSynapseMacros` | `SwiftOpenResponsesDSL`, `SwiftLLMToolMacros`, `SwiftOpenSkills` | Agent harness + macros + SwiftUI — `@SpecDrivenAgent`, `AgentToolProtocol`, `ToolRegistry`, `AgentToolLoop`, hooks, permissions, recovery, streaming, MCP, guardrails, multi-agent coordination, session persistence, caching, plugins, telemetry, `SwiftSynapseUI` |
+| `SwiftSynapseHarness` | `SwiftOpenResponsesDSL`, `SwiftLLMToolMacros`, `SwiftOpenSkills` | Unified agent harness — re-exports all dependencies; provides `@SpecDrivenAgent`, `AgentToolProtocol`, `ToolRegistry`, `AgentToolLoop`, hooks, permissions, recovery, streaming, MCP, guardrails, multi-agent coordination, session persistence, caching, plugins, telemetry, cost tracking, context management, `SystemPromptBuilder`, `SwiftSynapseUI` |
 | `SwiftLLMToolMacros` | `SwiftOpenResponsesDSL` | Tool macros — `@LLMTool` / `@LLMToolArguments` generate `FunctionToolParam` schemas |
 | `SwiftOpenSkills` | `SwiftOpenResponsesDSL` | agentskills.io standard — `SkillStore`, `SkillsAgent`, skill discovery and activation |
 
 When generating imports for an agent file:
-- Import `SwiftSynapseMacrosClient` for every agent actor — it re-exports both `SwiftOpenResponsesDSL` and `SwiftLLMToolMacros`, so a single import covers all types.
+- Import `SwiftSynapseHarness` for every agent actor — it re-exports `SwiftOpenResponsesDSL`, `SwiftLLMToolMacros`, and `SwiftOpenSkills`, so a single import covers all types.
 - Import `Foundation` explicitly only if the agent uses `URL` or other Foundation types directly.
 
 ---

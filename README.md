@@ -233,9 +233,9 @@ let result = try await agent.send(goal)
 | `AgentLLMClient` | Protocol — `send(_:)` / `stream(_:)` with `CloudLLMClient` and `HybridLLMClient` (on-device + cloud fallback) implementations |
 | `AgentSession` | Codable struct — session persistence with `CodableTranscriptEntry` bridge |
 
-### Agent Harness (via SwiftSynapseMacros)
+### Agent Harness (via SwiftSynapseHarness)
 
-The [SwiftSynapseMacros](https://github.com/RichNasz/SwiftSynapseMacros) package provides a complete agent harness — everything between `run(goal:)` and your domain logic:
+The [SwiftSynapseHarness](https://github.com/RichNasz/SwiftSynapseHarness) package provides a complete agent harness — everything between `run(goal:)` and your domain logic:
 
 | Capability | Key Types |
 |---|---|
@@ -326,7 +326,7 @@ SwiftSynapse agents depend on the macro libraries. Add them to your Swift packag
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/RichNasz/SwiftSynapseMacros", branch: "main"),
+    .package(url: "https://github.com/RichNasz/SwiftSynapseHarness", branch: "main"),
 ],
 targets: [
     .target(
@@ -344,12 +344,12 @@ For SwiftUI views and App Intents:
 .target(
     name: "YourApp",
     dependencies: [
-        .product(name: "SwiftSynapseUI", package: "SwiftSynapseMacros"),
+        .product(name: "SwiftSynapseUI", package: "SwiftSynapseHarness"),
     ]
 )
 ```
 
-> `SwiftSynapseHarness` re-exports `SwiftSynapseMacrosClient` (which re-exports `SwiftOpenResponsesDSL` and `SwiftLLMToolMacros`), so a single import is all most agent files need.
+> `SwiftSynapseHarness` re-exports `SwiftOpenResponsesDSL`, `SwiftLLMToolMacros`, and `SwiftOpenSkills`, so a single import is all most agent files need.
 
 > **Platform requirement:** On-device Foundation Models inference requires **iOS 26+**, **macOS 26+**, or **visionOS 2.4+** with Apple Intelligence enabled. For broader compatibility, point `AgentConfiguration` at any OpenAI-compatible cloud endpoint.
 
@@ -384,7 +384,7 @@ This project is released under the **MIT License** — use it, fork it, build on
 
 | Library | Purpose |
 |---|---|
-| [SwiftSynapseMacros](https://github.com/RichNasz/SwiftSynapseMacros) | Production agent harness + macros + SwiftUI — `@SpecDrivenAgent`, typed tools, hooks, permissions, recovery, streaming, MCP, guardrails, multi-agent coordination, session persistence, caching, plugins, telemetry, `SwiftSynapseUI` |
+| [SwiftSynapseHarness](https://github.com/RichNasz/SwiftSynapseHarness) | Unified agent harness — re-exports all dependencies; provides `@SpecDrivenAgent`, typed tools, hooks, permissions, recovery, streaming, MCP, guardrails, multi-agent coordination, session persistence, caching, plugins, telemetry, cost tracking, context management, `SwiftSynapseUI` |
 | [SwiftOpenResponsesDSL](https://github.com/RichNasz/SwiftOpenResponsesDSL) | Base LLM communication layer — `Agent`, `ResponseRequest`, `LLMClient`, `AgentTool`, `ToolSession` |
 | [SwiftLLMToolMacros](https://github.com/RichNasz/SwiftLLMToolMacros) | Tool definition macros — `@LLMTool` / `@LLMToolArguments` generate `FunctionToolParam` schemas |
 | [SwiftOpenSkills](https://github.com/RichNasz/SwiftOpenSkills) | agentskills.io standard in Swift — `SkillStore`, `SkillsAgent`, skill discovery and activation |

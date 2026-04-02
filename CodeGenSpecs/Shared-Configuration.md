@@ -94,7 +94,7 @@ public enum AgentConfigurationError: Error, Sendable {
 }
 ```
 
-This is a **shared** error type defined in `SwiftSynapseMacrosClient`. Agents do not define it.
+This is a **shared** error type defined in `SwiftSynapseHarness`. Agents do not define it.
 
 ---
 
@@ -175,21 +175,15 @@ The stored property is `_inferenceClient: any AgentLLMClient` (see `Shared-Found
 
 ---
 
-## Migration Note: Old vs. New Init Patterns
+## Migration Note
 
-Existing agents (`LLMChat`, `LLMChatPersonas`) use the legacy direct-parameter init:
+All agents now use the `AgentConfiguration` pattern. The legacy direct-parameter init (`serverURL`, `modelName`, `apiKey`) is no longer used.
 
-```swift
-public init(serverURL: String, modelName: String, apiKey: String? = nil) throws
-```
+---
 
-New agents (`ToolUsingAgent`, `StreamingChatAgent`, `RetryingLLMChatAgent`) use `AgentConfiguration`:
+## Advanced Configuration
 
-```swift
-public init(configuration: AgentConfiguration) throws
-```
-
-Both patterns are valid. Old agents are not required to migrate to `AgentConfiguration` immediately. When an old agent is next regenerated or its spec is updated, it should adopt `AgentConfiguration` at that time. The legacy pattern should not be used for new agents.
+For complex deployments requiring multi-source configuration resolution (CLI arguments, project files, MDM profiles), see `Shared-Configuration-Hierarchy.md`. The `fromEnvironment(overrides:)` pattern above remains the primary API for most agents; the hierarchy is the underlying mechanism.
 
 ---
 
