@@ -52,8 +52,17 @@ This README is the primary entry point for visitors, explaining the project, sho
 
 4. **Quick Start**
    - Clone command
-   - Open in Xcode
-   - Run the AgentDashboard app (or CLI example if added)
+   - Open the dashboard in Xcode:
+     ```bash
+     open Apps/AgentDashboard/AgentDashboard.xcodeproj
+     ```
+   - Select a destination (My Mac, iPhone Simulator, Apple Vision Pro) and Run
+   - The **AgentDashboard** is a native multi-platform SwiftUI app with:
+     - Sidebar listing all 12 agents in **Foundation** and **Advanced** tier sections
+     - Per-agent detail view with live, auto-scrolling transcript
+     - Streaming token display, tool call entries, and reasoning steps in the transcript
+     - Gear icon to configure the LLM endpoint, model name, and API key (persisted across launches)
+     - Stop button to cancel a running agent at any time
    - One short code snippet showing agent invocation (e.g., goal → run → transcript update)
 
 5. **Agent Examples**

@@ -1,0 +1,455 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		AA000000000000000000000B /* AgentDashboardApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000009 /* AgentDashboardApp.swift */; };
+		AA0000000000000000000015 /* SwiftSynapseHarness in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000014 /* SwiftSynapseHarness */; };
+		AA0000000000000000000017 /* SwiftSynapseUI in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000016 /* SwiftSynapseUI */; };
+		AA0000000000000000000019 /* SimpleEchoAgent in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000018 /* SimpleEchoAgent */; };
+		AA000000000000000000001B /* LLMChatAgent in Frameworks */ = {isa = PBXBuildFile; productRef = AA000000000000000000001A /* LLMChatAgent */; };
+		AA000000000000000000001D /* LLMChatPersonasAgent in Frameworks */ = {isa = PBXBuildFile; productRef = AA000000000000000000001C /* LLMChatPersonasAgent */; };
+		AA000000000000000000001F /* RetryingLLMChatAgentAgent in Frameworks */ = {isa = PBXBuildFile; productRef = AA000000000000000000001E /* RetryingLLMChatAgentAgent */; };
+		AA0000000000000000000021 /* StreamingChatAgentAgent in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000020 /* StreamingChatAgentAgent */; };
+		AA0000000000000000000023 /* ToolUsingAgentAgent in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000022 /* ToolUsingAgentAgent */; };
+		AA0000000000000000000025 /* SkillsEnabledAgentAgent in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000024 /* SkillsEnabledAgentAgent */; };
+		AA0000000000000000000027 /* PRReviewerAgent in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000026 /* PRReviewerAgent */; };
+		AA0000000000000000000029 /* PerformanceOptimizerAgent in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000028 /* PerformanceOptimizerAgent */; };
+		AA000000000000000000002B /* ResearchAssistantAgent in Frameworks */ = {isa = PBXBuildFile; productRef = AA000000000000000000002A /* ResearchAssistantAgent */; };
+		AA000000000000000000002D /* TaskPlannerAgent in Frameworks */ = {isa = PBXBuildFile; productRef = AA000000000000000000002C /* TaskPlannerAgent */; };
+		AA000000000000000000002F /* DataPipelineAgentAgent in Frameworks */ = {isa = PBXBuildFile; productRef = AA000000000000000000002E /* DataPipelineAgentAgent */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		AA0000000000000000000007 /* AgentDashboard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AgentDashboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0000000000000000000009 /* AgentDashboardApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentDashboardApp.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		AA000000000000000000000C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA0000000000000000000015 /* SwiftSynapseHarness in Frameworks */,
+				AA0000000000000000000017 /* SwiftSynapseUI in Frameworks */,
+				AA0000000000000000000019 /* SimpleEchoAgent in Frameworks */,
+				AA000000000000000000001B /* LLMChatAgent in Frameworks */,
+				AA000000000000000000001D /* LLMChatPersonasAgent in Frameworks */,
+				AA000000000000000000001F /* RetryingLLMChatAgentAgent in Frameworks */,
+				AA0000000000000000000021 /* StreamingChatAgentAgent in Frameworks */,
+				AA0000000000000000000023 /* ToolUsingAgentAgent in Frameworks */,
+				AA0000000000000000000025 /* SkillsEnabledAgentAgent in Frameworks */,
+				AA0000000000000000000027 /* PRReviewerAgent in Frameworks */,
+				AA0000000000000000000029 /* PerformanceOptimizerAgent in Frameworks */,
+				AA000000000000000000002B /* ResearchAssistantAgent in Frameworks */,
+				AA000000000000000000002D /* TaskPlannerAgent in Frameworks */,
+				AA000000000000000000002F /* DataPipelineAgentAgent in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		AA0000000000000000000005 /* AgentDashboard */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000008 /* AgentDashboard */,
+				AA0000000000000000000006 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000006 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000007 /* AgentDashboard.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000008 /* AgentDashboard */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000009 /* AgentDashboardApp.swift */,
+			);
+			name = AgentDashboard;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AA000000000000000000000E /* AgentDashboard */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA000000000000000000000F /* Build configuration list for PBXNativeTarget "AgentDashboard" */;
+			buildPhases = (
+				AA000000000000000000000A /* Sources */,
+				AA000000000000000000000C /* Frameworks */,
+				AA000000000000000000000D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = AgentDashboard;
+			packageProductDependencies = (
+				AA0000000000000000000014 /* SwiftSynapseHarness */,
+				AA0000000000000000000016 /* SwiftSynapseUI */,
+				AA0000000000000000000018 /* SimpleEchoAgent */,
+				AA000000000000000000001A /* LLMChatAgent */,
+				AA000000000000000000001C /* LLMChatPersonasAgent */,
+				AA000000000000000000001E /* RetryingLLMChatAgentAgent */,
+				AA0000000000000000000020 /* StreamingChatAgentAgent */,
+				AA0000000000000000000022 /* ToolUsingAgentAgent */,
+				AA0000000000000000000024 /* SkillsEnabledAgentAgent */,
+				AA0000000000000000000026 /* PRReviewerAgent */,
+				AA0000000000000000000028 /* PerformanceOptimizerAgent */,
+				AA000000000000000000002A /* ResearchAssistantAgent */,
+				AA000000000000000000002C /* TaskPlannerAgent */,
+				AA000000000000000000002E /* DataPipelineAgentAgent */,
+			);
+			productName = AgentDashboard;
+			productReference = AA0000000000000000000007 /* AgentDashboard.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AA0000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1620;
+				LastUpgradeCheck = 1620;
+				TargetAttributes = {
+					AA000000000000000000000E = {
+						CreatedOnToolsVersion = 16.2;
+					};
+				};
+			};
+			buildConfigurationList = AA0000000000000000000002 /* Build configuration list for PBXProject "AgentDashboard" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = AA0000000000000000000005;
+			packageReferences = (
+				AA0000000000000000000012 /* XCRemoteSwiftPackageReference "SwiftSynapseHarness" */,
+				AA0000000000000000000013 /* XCLocalSwiftPackageReference "../.." */,
+			);
+			productRefGroup = AA0000000000000000000006 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AA000000000000000000000E /* AgentDashboard */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AA000000000000000000000D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AA000000000000000000000A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA000000000000000000000B /* AgentDashboardApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		AA0000000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		AA0000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		AA0000000000000000000010 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Agent Dashboard";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright \U00a9 2026 SwiftSynapse. MIT License.";
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = "1.0";
+				PRODUCT_BUNDLE_IDENTIFIER = com.swiftsynapse.agentdashboard;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.2;
+			};
+			name = Debug;
+		};
+		AA0000000000000000000011 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Agent Dashboard";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright \U00a9 2026 SwiftSynapse. MIT License.";
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = "1.0";
+				PRODUCT_BUNDLE_IDENTIFIER = com.swiftsynapse.agentdashboard;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.2;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AA0000000000000000000002 /* Build configuration list for PBXProject "AgentDashboard" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA0000000000000000000003 /* Debug */,
+				AA0000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AA000000000000000000000F /* Build configuration list for PBXNativeTarget "AgentDashboard" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA0000000000000000000010 /* Debug */,
+				AA0000000000000000000011 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		AA0000000000000000000013 /* XCLocalSwiftPackageReference "../.." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../..;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		AA0000000000000000000012 /* XCRemoteSwiftPackageReference "SwiftSynapseHarness" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RichNasz/SwiftSynapseHarness";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AA0000000000000000000014 /* SwiftSynapseHarness */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000012 /* XCRemoteSwiftPackageReference "SwiftSynapseHarness" */;
+			productName = SwiftSynapseHarness;
+		};
+		AA0000000000000000000016 /* SwiftSynapseUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000012 /* XCRemoteSwiftPackageReference "SwiftSynapseHarness" */;
+			productName = SwiftSynapseUI;
+		};
+		AA0000000000000000000018 /* SimpleEchoAgent */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000013 /* XCLocalSwiftPackageReference "../.." */;
+			productName = SimpleEchoAgent;
+		};
+		AA000000000000000000001A /* LLMChatAgent */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000013 /* XCLocalSwiftPackageReference "../.." */;
+			productName = LLMChatAgent;
+		};
+		AA000000000000000000001C /* LLMChatPersonasAgent */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000013 /* XCLocalSwiftPackageReference "../.." */;
+			productName = LLMChatPersonasAgent;
+		};
+		AA000000000000000000001E /* RetryingLLMChatAgentAgent */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000013 /* XCLocalSwiftPackageReference "../.." */;
+			productName = RetryingLLMChatAgentAgent;
+		};
+		AA0000000000000000000020 /* StreamingChatAgentAgent */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000013 /* XCLocalSwiftPackageReference "../.." */;
+			productName = StreamingChatAgentAgent;
+		};
+		AA0000000000000000000022 /* ToolUsingAgentAgent */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000013 /* XCLocalSwiftPackageReference "../.." */;
+			productName = ToolUsingAgentAgent;
+		};
+		AA0000000000000000000024 /* SkillsEnabledAgentAgent */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000013 /* XCLocalSwiftPackageReference "../.." */;
+			productName = SkillsEnabledAgentAgent;
+		};
+		AA0000000000000000000026 /* PRReviewerAgent */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000013 /* XCLocalSwiftPackageReference "../.." */;
+			productName = PRReviewerAgent;
+		};
+		AA0000000000000000000028 /* PerformanceOptimizerAgent */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000013 /* XCLocalSwiftPackageReference "../.." */;
+			productName = PerformanceOptimizerAgent;
+		};
+		AA000000000000000000002A /* ResearchAssistantAgent */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000013 /* XCLocalSwiftPackageReference "../.." */;
+			productName = ResearchAssistantAgent;
+		};
+		AA000000000000000000002C /* TaskPlannerAgent */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000013 /* XCLocalSwiftPackageReference "../.." */;
+			productName = TaskPlannerAgent;
+		};
+		AA000000000000000000002E /* DataPipelineAgentAgent */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000000000000000000013 /* XCLocalSwiftPackageReference "../.." */;
+			productName = DataPipelineAgentAgent;
+		};
+/* End XCSwiftPackageProductDependency section */
+
+	};
+	rootObject = AA0000000000000000000001 /* Project object */;
+}
