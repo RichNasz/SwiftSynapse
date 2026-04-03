@@ -361,6 +361,10 @@ We welcome contributions — especially new agent specs, improvements to shared 
 
 ### Adding a new agent
 
+Read the **[Creating Agent Specs guide](./docs/Creating-Agent-Specs.md)** for a detailed walkthrough of every section in SPEC.md and Overview.md, the traits system, tool design, and the pre-generation checklist.
+
+Quick steps:
+
 1. Copy `Agents/TemplateAgent/` -> `Agents/<YourAgentName>/`
 2. Fill in `Agents/<YourAgentName>/specs/SPEC.md`
 3. Customize `Agents/<YourAgentName>/specs/Overview.md` — delegate to `Agent` from SwiftOpenResponsesDSL, use `AgentConfiguration` and `retryWithBackoff`

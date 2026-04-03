@@ -115,6 +115,7 @@ This README is the primary entry point for visitors, explaining the project, sho
    - Link to SwiftSynapseHarness docs for details
 
 9. **Contributing**
+   - Link to `docs/Creating-Agent-Specs.md` as the complete guide for writing agent specs
    - How to add a new agent: copy TemplateAgent/, write SPEC.md + specs/Overview.md, generate code
    - PR guidelines: focus on spec quality, generated code only
 
