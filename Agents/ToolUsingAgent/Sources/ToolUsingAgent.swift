@@ -5,6 +5,7 @@ import Foundation
 import SwiftSynapseHarness
 
 public enum ToolUsingAgentError: Error, Sendable {
+    case emptyGoal
     case noResponseContent
     case toolCallFailed(String)
     case unknownTool(String)
@@ -131,6 +132,11 @@ public actor ToolUsingAgent {
     }
 
     public func execute(goal: String) async throws -> String {
+        guard !goal.isEmpty else {
+            _status = .error(ToolUsingAgentError.emptyGoal)
+            throw ToolUsingAgentError.emptyGoal
+        }
+
         let client = try config.buildClient()
 
         let tools = ToolRegistry()

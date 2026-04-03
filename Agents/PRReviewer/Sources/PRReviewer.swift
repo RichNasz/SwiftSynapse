@@ -5,8 +5,9 @@ import Foundation
 import SwiftSynapseHarness
 
 public enum PRReviewerError: Error, Sendable {
+    case emptyGoal
     case noResponseContent
-    case diffTooLarge(String)
+    case diffTooLarge(path: String)
 }
 
 // MARK: - Tool Definitions
@@ -225,6 +226,11 @@ public actor PRReviewer {
     }
 
     public func execute(goal: String) async throws -> String {
+        guard !goal.isEmpty else {
+            _status = .error(PRReviewerError.emptyGoal)
+            throw PRReviewerError.emptyGoal
+        }
+
         let client = try config.buildClient()
 
         let tools = ToolRegistry()

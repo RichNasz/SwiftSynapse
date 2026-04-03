@@ -5,8 +5,10 @@ import Foundation
 import SwiftSynapseHarness
 
 public enum TaskPlannerError: Error, Sendable {
+    case emptyGoal
     case noResponseContent
     case phaseDecompositionFailed
+    case coordinationFailed(phaseId: String, error: any Error)
     case synthesisFailedNoResults
 }
 
@@ -129,6 +131,11 @@ public actor TaskPlanner {
     }
 
     public func execute(goal: String) async throws -> String {
+        guard !goal.isEmpty else {
+            _status = .error(TaskPlannerError.emptyGoal)
+            throw TaskPlannerError.emptyGoal
+        }
+
         let client = try config.buildClient()
 
         let tools = ToolRegistry()

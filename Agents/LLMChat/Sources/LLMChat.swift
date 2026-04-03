@@ -5,6 +5,7 @@ import Foundation
 import SwiftSynapseHarness
 
 public enum LLMChatError: Error, Sendable {
+    case emptyGoal
     case noResponseContent
 }
 
@@ -18,13 +19,14 @@ public actor LLMChat {
         _ = try configuration.buildLLMClient()
     }
 
-    /// Legacy convenience init for backward compatibility.
-    public init(serverURL: String, modelName: String, apiKey: String? = nil) throws {
-        let config = try AgentConfiguration(serverURL: serverURL, modelName: modelName, apiKey: apiKey)
-        try self.init(configuration: config)
-    }
-
     public func execute(goal: String) async throws -> String {
+        guard !goal.isEmpty else {
+            _status = .error(LLMChatError.emptyGoal)
+            throw LLMChatError.emptyGoal
+        }
+        _status = .running
+        _transcript.reset()
+
         let client = try config.buildLLMClient()
         let agent = Agent(client: client, model: config.modelName)
 
@@ -34,10 +36,12 @@ public actor LLMChat {
         }
 
         guard !result.isEmpty else {
+            _status = .error(LLMChatError.noResponseContent)
             throw LLMChatError.noResponseContent
         }
 
         _transcript.sync(from: await agent.transcript)
+        _status = .completed(result)
         return result
     }
 }

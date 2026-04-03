@@ -5,8 +5,10 @@ import Foundation
 import SwiftSynapseHarness
 
 public enum DataPipelineAgentError: Error, Sendable {
+    case emptyGoal
     case noResponseContent
-    case dataFileNotFound(String)
+    case noPluginsActivated
+    case dataFileNotFound(path: String)
 }
 
 // MARK: - Tool Definitions
@@ -197,6 +199,11 @@ public actor DataPipelineAgent {
     }
 
     public func execute(goal: String) async throws -> String {
+        guard !goal.isEmpty else {
+            _status = .error(DataPipelineAgentError.emptyGoal)
+            throw DataPipelineAgentError.emptyGoal
+        }
+
         let client = try config.buildClient()
 
         let tools = ToolRegistry()

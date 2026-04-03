@@ -5,6 +5,7 @@ import Foundation
 import SwiftSynapseHarness
 
 public enum SkillsEnabledAgentError: Error, Sendable {
+    case emptyGoal
     case noResponseContent
 }
 
@@ -19,6 +20,10 @@ public actor SkillsEnabledAgent {
     }
 
     public func execute(goal: String) async throws -> String {
+        guard !goal.isEmpty else {
+            _status = .error(SkillsEnabledAgentError.emptyGoal)
+            throw SkillsEnabledAgentError.emptyGoal
+        }
         _transcript.append(.userMessage(goal))
 
         // Discover skills from standard filesystem locations

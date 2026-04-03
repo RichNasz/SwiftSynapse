@@ -5,6 +5,7 @@ import Foundation
 import SwiftSynapseHarness
 
 public enum StreamingChatAgentError: Error, Sendable {
+    case emptyGoal
     case noResponseContent
 }
 
@@ -18,13 +19,13 @@ public actor StreamingChatAgent {
         _ = try configuration.buildLLMClient()
     }
 
-    /// Legacy convenience init for backward compatibility.
-    public init(serverURL: String, modelName: String, apiKey: String? = nil) throws {
-        let config = try AgentConfiguration(serverURL: serverURL, modelName: modelName, apiKey: apiKey)
-        try self.init(configuration: config)
-    }
-
     public func execute(goal: String) async throws -> String {
+        guard !goal.isEmpty else {
+            _status = .error(StreamingChatAgentError.emptyGoal)
+            throw StreamingChatAgentError.emptyGoal
+        }
+        _status = .running
+        _transcript.reset()
         _transcript.append(.userMessage(goal))
 
         let client = try config.buildLLMClient()
@@ -44,16 +45,19 @@ public actor StreamingChatAgent {
             }
         } catch {
             _transcript.setStreaming(false)
+            _status = .error(error)
             throw error
         }
 
         _transcript.setStreaming(false)
 
         guard !accumulated.isEmpty else {
+            _status = .error(StreamingChatAgentError.noResponseContent)
             throw StreamingChatAgentError.noResponseContent
         }
 
         _transcript.append(.assistantMessage(accumulated))
+        _status = .completed(accumulated)
         return accumulated
     }
 }

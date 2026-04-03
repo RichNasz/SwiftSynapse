@@ -5,6 +5,7 @@ import Foundation
 import SwiftSynapseHarness
 
 public enum PerformanceOptimizerError: Error, Sendable {
+    case emptyGoal
     case noResponseContent
     case benchmarkFailed(String)
     case profilingUnavailable
@@ -155,6 +156,11 @@ public actor PerformanceOptimizer {
     }
 
     public func execute(goal: String) async throws -> String {
+        guard !goal.isEmpty else {
+            _status = .error(PerformanceOptimizerError.emptyGoal)
+            throw PerformanceOptimizerError.emptyGoal
+        }
+
         let client = try config.buildClient()
 
         let tools = ToolRegistry()

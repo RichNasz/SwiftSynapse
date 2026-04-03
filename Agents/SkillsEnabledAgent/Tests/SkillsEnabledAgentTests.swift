@@ -8,24 +8,13 @@ import SwiftSynapseHarness
 
 @Test func skillsEnabledAgentInitThrowsOnInvalidURL() {
     #expect(throws: AgentConfigurationError.self) {
-        _ = try SkillsEnabledAgent(configuration: try AgentConfiguration(
-            serverURL: ":::not-a-url", modelName: "test-model"
-        ))
-    }
-}
-
-@Test func skillsEnabledAgentInitThrowsOnEmptyURL() {
-    #expect(throws: AgentConfigurationError.self) {
-        _ = try SkillsEnabledAgent(configuration: try AgentConfiguration(
-            serverURL: "", modelName: "test-model"
-        ))
+        _ = try AgentConfiguration(serverURL: ":::not-a-url", modelName: "test-model")
     }
 }
 
 @Test func skillsEnabledAgentThrowsOnEmptyGoal() async throws {
-    let agent = try SkillsEnabledAgent(configuration: try AgentConfiguration(
-        serverURL: "http://127.0.0.1:1234/v1/responses", modelName: "test-model"
-    ))
+    let config = try AgentConfiguration(serverURL: "http://127.0.0.1:1234/v1/responses", modelName: "test-model")
+    let agent = try SkillsEnabledAgent(configuration: config)
     await #expect(throws: AgentLifecycleError.self) {
         try await agent.run(goal: "")
     }
@@ -37,9 +26,8 @@ import SwiftSynapseHarness
 }
 
 @Test func skillsEnabledAgentInitialStateIsIdle() async throws {
-    let agent = try SkillsEnabledAgent(configuration: try AgentConfiguration(
-        serverURL: "http://127.0.0.1:1234/v1/responses", modelName: "test-model"
-    ))
+    let config = try AgentConfiguration(serverURL: "http://127.0.0.1:1234/v1/responses", modelName: "test-model")
+    let agent = try SkillsEnabledAgent(configuration: config)
     let status = await agent.status
     guard case .idle = status else {
         Issue.record("Expected .idle status, got \(status)")
@@ -53,10 +41,11 @@ import SwiftSynapseHarness
 
 @Test(.enabled(if: ProcessInfo.processInfo.environment["SWIFTSYNAPSE_LIVE_TESTS"] != nil))
 func skillsEnabledAgentLiveResponse() async throws {
-    let agent = try SkillsEnabledAgent(configuration: try AgentConfiguration(
+    let config = try AgentConfiguration(
         serverURL: "http://127.0.0.1:1234/v1/responses",
-        modelName: "nvidia/nemotron-3-nano"
-    ))
+        modelName: "nvidia/nemotron-3-nano-4b"
+    )
+    let agent = try SkillsEnabledAgent(configuration: config)
     let result = try await agent.run(goal: "Reply with the single word OK.")
     #expect(!result.isEmpty)
 

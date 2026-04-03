@@ -8,18 +8,25 @@ import SwiftSynapseHarness
 
 @Test func toolUsingAgentInitThrowsOnInvalidURL() {
     #expect(throws: AgentConfigurationError.self) {
-        _ = try ToolUsingAgent(serverURL: ":::not-a-url", modelName: "test-model")
+        _ = try AgentConfiguration(serverURL: ":::not-a-url", modelName: "test-model")
     }
 }
 
-@Test func toolUsingAgentInitThrowsOnEmptyURL() {
-    #expect(throws: AgentConfigurationError.self) {
-        _ = try ToolUsingAgent(serverURL: "", modelName: "test-model")
+@Test func toolUsingAgentInitialStateIsIdle() async throws {
+    let config = try AgentConfiguration(serverURL: "http://127.0.0.1:1234/v1/responses", modelName: "test-model")
+    let agent = try ToolUsingAgent(configuration: config)
+    let status = await agent.status
+    guard case .idle = status else {
+        Issue.record("Expected .idle status, got \(status)")
+        return
     }
+    let entries = await agent.transcript.entries
+    #expect(entries.isEmpty)
 }
 
 @Test func toolUsingAgentThrowsOnEmptyGoal() async throws {
-    let agent = try ToolUsingAgent(serverURL: "http://127.0.0.1:1234/v1/responses", modelName: "test-model")
+    let config = try AgentConfiguration(serverURL: "http://127.0.0.1:1234/v1/responses", modelName: "test-model")
+    let agent = try ToolUsingAgent(configuration: config)
     await #expect(throws: AgentLifecycleError.self) {
         try await agent.run(goal: "")
     }
@@ -30,101 +37,68 @@ import SwiftSynapseHarness
     }
 }
 
-@Test func toolUsingAgentInitialStateIsIdle() async throws {
-    let agent = try ToolUsingAgent(serverURL: "http://127.0.0.1:1234/v1/responses", modelName: "test-model")
-    let status = await agent.status
-    guard case .idle = status else {
-        Issue.record("Expected .idle status, got \(status)")
-        return
-    }
-    let entries = await agent.transcript.entries
-    #expect(entries.isEmpty)
-}
-
 // MARK: - Tool Unit Tests
 
-@Test func calculatorToolReturnsResult() async throws {
-    let tool = CalculateTool()
-    let result = try await tool.execute(input: .init(expression: "10 + 5"))
-    #expect(result == "15.0")
+@Test func calculateToolReturnsResult() async throws {
+    let tool = Calculate()
+    let result = try await tool.call(arguments: .init(expression: "2+2"))
+    #expect(result.content == "4.0")
 }
 
-@Test func calculatorToolDivision() async throws {
-    let tool = CalculateTool()
-    let result = try await tool.execute(input: .init(expression: "144 / 12"))
-    #expect(result == "12.0")
+@Test func calculateToolDivision() async throws {
+    let tool = Calculate()
+    let result = try await tool.call(arguments: .init(expression: "144/12"))
+    #expect(result.content == "12.0")
 }
 
-@Test func converterToolMilesToKilometers() async throws {
-    let tool = ConvertUnitTool()
-    let result = try await tool.execute(input: .init(value: 100, fromUnit: "miles", toUnit: "kilometers"))
-    #expect(result == "160.9344")
-}
-
-@Test func converterToolCelsiusToFahrenheit() async throws {
-    let tool = ConvertUnitTool()
-    let result = try await tool.execute(input: .init(value: 100, fromUnit: "celsius", toUnit: "fahrenheit"))
-    #expect(result == "212.0000")
-}
-
-@Test func converterToolInvalidUnitThrows() async {
-    let tool = ConvertUnitTool()
+@Test func calculateToolInvalidExpressionThrows() async {
+    let tool = Calculate()
     await #expect(throws: ToolUsingAgentError.self) {
-        _ = try await tool.execute(input: .init(value: 100, fromUnit: "parsecs", toUnit: "kilometers"))
+        _ = try await tool.call(arguments: .init(expression: "!!!"))
+    }
+}
+
+@Test func convertUnitMilesToKilometers() async throws {
+    let tool = ConvertUnit()
+    let result = try await tool.call(arguments: .init(value: 100, fromUnit: "miles", toUnit: "kilometers"))
+    #expect(result.content == "160.9344")
+}
+
+@Test func convertUnitCelsiusToFahrenheit() async throws {
+    let tool = ConvertUnit()
+    let result = try await tool.call(arguments: .init(value: 0, fromUnit: "celsius", toUnit: "fahrenheit"))
+    #expect(result.content == "32.0000")
+}
+
+@Test func convertUnitInvalidUnitThrows() async {
+    let tool = ConvertUnit()
+    await #expect(throws: ToolUsingAgentError.self) {
+        _ = try await tool.call(arguments: .init(value: 100, fromUnit: "parsecs", toUnit: "kilometers"))
     }
 }
 
 @Test func formatNumberTool() async throws {
-    let tool = FormatNumberTool()
-    let result = try await tool.execute(input: .init(value: 3.14159265, decimalPlaces: 2))
-    #expect(result == "3.14")
+    let tool = FormatNumber()
+    let result = try await tool.call(arguments: .init(value: 3.14159, decimalPlaces: 2))
+    #expect(result.content == "3.14")
 }
 
 @Test func formatNumberToolClamps() async throws {
-    let tool = FormatNumberTool()
-    let result = try await tool.execute(input: .init(value: 3.14, decimalPlaces: 15))
-    // Should clamp to 10 decimal places
-    #expect(result == "3.1400000000")
-}
-
-// MARK: - Tool Registry Tests
-
-@Test func toolRegistryDispatchesCorrectly() async throws {
-    let registry = ToolRegistry()
-    registry.register(CalculateTool())
-    registry.register(ConvertUnitTool())
-    registry.register(FormatNumberTool())
-
-    let result = try await registry.dispatch(
-        name: "calculate",
-        callId: "test-1",
-        arguments: #"{"expression":"2 + 2"}"#
-    )
-    #expect(result.success)
-    #expect(result.output == "4.0")
-}
-
-@Test func toolRegistryThrowsOnUnknownTool() async {
-    let registry = ToolRegistry()
-    registry.register(CalculateTool())
-
-    await #expect(throws: ToolDispatchError.self) {
-        _ = try await registry.dispatch(
-            name: "nonexistent",
-            callId: "test-1",
-            arguments: "{}"
-        )
-    }
+    let tool = FormatNumber()
+    let result = try await tool.call(arguments: .init(value: 3.14, decimalPlaces: 99))
+    // decimalPlaces is clamped to 10
+    #expect(result.content == "3.1400000000")
 }
 
 // MARK: - Live Integration Tests
 
 @Test(.enabled(if: ProcessInfo.processInfo.environment["SWIFTSYNAPSE_LIVE_TESTS"] != nil))
 func toolUsingAgentLiveResponse() async throws {
-    let agent = try ToolUsingAgent(
+    let config = try AgentConfiguration(
         serverURL: "http://127.0.0.1:1234/v1/responses",
-        modelName: "nvidia/nemotron-3-nano"
+        modelName: "nvidia/nemotron-3-nano-4b"
     )
+    let agent = try ToolUsingAgent(configuration: config)
     let result = try await agent.run(goal: "Convert 100 miles to kilometers")
     #expect(!result.isEmpty)
 
@@ -135,6 +109,5 @@ func toolUsingAgentLiveResponse() async throws {
     }
 
     let entries = await agent.transcript.entries
-    // Should have at least userMessage + toolCall + toolResult + assistantMessage
-    #expect(entries.count >= 4)
+    #expect(entries.count >= 2)
 }

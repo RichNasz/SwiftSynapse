@@ -5,8 +5,11 @@ import Foundation
 import SwiftSynapseHarness
 
 public enum ResearchAssistantError: Error, Sendable {
+    case emptyGoal
     case noResponseContent
+    case sessionTypeMismatch(expected: String, actual: String)
     case sessionCorrupted
+    case mcpConnectionFailed(server: String, error: any Error)
 }
 
 // MARK: - Tool Definitions
@@ -182,6 +185,11 @@ public actor ResearchAssistant {
     }
 
     public func execute(goal: String) async throws -> String {
+        guard !goal.isEmpty else {
+            _status = .error(ResearchAssistantError.emptyGoal)
+            throw ResearchAssistantError.emptyGoal
+        }
+
         let client = try config.buildClient()
 
         let tools = ToolRegistry()
