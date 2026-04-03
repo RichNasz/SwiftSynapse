@@ -589,8 +589,8 @@ struct GoalInputView: View {
                     Label("Send", systemImage: "paperplane.fill")
                 }
             }
-            .disabled(!isRunning && trimmed.isEmpty)
             .keyboardShortcut(.return, modifiers: .command)
+            .opacity(!isRunning && trimmed.isEmpty ? 0.4 : 1.0)
         }
     }
 }
