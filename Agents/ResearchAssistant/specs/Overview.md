@@ -8,17 +8,20 @@
 
 | File | Target | Purpose |
 |------|--------|---------|
-| `Sources/ResearchAssistant.swift` | `ResearchAssistantAgent` library | Main actor + error enum + ResearchState |
-| `Sources/ResearchAssistant+Tools.swift` | `ResearchAssistantAgent` library | Tool implementations |
+| `Sources/ResearchAssistant.swift` | `ResearchAssistantAgent` library | Error enum + tool structs + agent actor |
 | `CLI/ResearchAssistantCLI.swift` | `research-assistant` executable | ArgumentParser CLI with --resume option |
 | `Tests/ResearchAssistantTests.swift` | `ResearchAssistantTests` test target | Swift Testing suite |
+
+All tool structs live in `Sources/ResearchAssistant.swift` above the agent actor, separated by `// MARK: - Tool Definitions`.
 
 ---
 
 ## Shared Types Used
 
 - `AgentConfiguration` — centralized config
-- `AgentToolProtocol` / `ToolRegistry` — typed tool registration
+- `@LLMTool` / `@LLMToolArguments` / `@LLMToolGuide` — macro stack for compile-time tool schema generation
+- `AgentLLMTool` — protocol bridging `LLMTool` and `AgentToolProtocol`; only `call(arguments:) -> ToolOutput` required
+- `ToolRegistry` — registers `AgentLLMTool` conformances and dispatches calls
 - `AgentToolLoop.run()` — tool dispatch loop
 - `AgentSession` / `SessionStore` / `FileSessionStore` / `CodableTranscriptEntry` — session persistence
 - `MemoryStore` / `FileMemoryStore` / `MemoryEntry` / `MemoryCategory` — cross-session memory
@@ -41,7 +44,7 @@
 6. `Shared-System-Prompt-Builder.md` — inject prior memories into prompt
 7. `Shared-Agent-Tool-Loop.md` — `AgentToolLoop.run()` with transcript callbacks
 8. `Shared-Hook-System.md` — `sessionSaved`, `sessionRestored`, `memoryUpdated`
-9. `Shared-Tool-Registry.md` — tool conformances
+9. `Shared-Tool-Registry.md` — `AgentLLMTool` conformances
 10. `Shared-Error-Strategy.md` — error enum, status-before-throw
 
 ---

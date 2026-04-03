@@ -32,62 +32,82 @@ Follows `Shared-Configuration.md`. No additional stored properties beyond what `
 
 Three tools, all `isConcurrencySafe: true` (pure functions, no side effects):
 
-### calculate
+### Calculate
+
+Tool name (macro-derived): `calculate`
 
 ```swift
-@LLMTool(description: "Evaluates a basic arithmetic expression and returns the result as a Double.")
-func calculate(
-    @LLMToolArguments("expression", description: "A math expression using +, -, *, /. Example: '144 / 12'")
-    expression: String
-) async throws -> String
+/// Evaluates a basic arithmetic expression and returns the result as a Double.
+@LLMTool
+public struct Calculate: AgentLLMTool {
+    @LLMToolArguments
+    public struct Arguments {
+        @LLMToolGuide(description: "A math expression using +, -, *, /. Example: '144 / 12'")
+        var expression: String
+    }
+    public static var isConcurrencySafe: Bool { true }
+    public func call(arguments: Arguments) async throws -> ToolOutput { ... }
+}
 ```
 
-Implementation: parse the expression using `NSExpression`. If parsing fails, throw `ToolUsingAgentError.toolCallFailed("calculate")`.
+Implementation: sanitize `expression` to safe characters, evaluate with `NSExpression`. If empty after sanitizing or evaluation fails, throw `ToolUsingAgentError.toolCallFailed("calculate")`. Return `ToolOutput(content: "\(result.doubleValue)")`.
 
-### convertUnit
+### ConvertUnit
+
+Tool name (macro-derived): `convert_unit`
 
 ```swift
-@LLMTool(description: "Converts a value from one unit to another. Supports length, weight, and temperature.")
-func convertUnit(
-    @LLMToolArguments("value", description: "The numeric value to convert.")
-    value: Double,
-    @LLMToolArguments("fromUnit", description: "Source unit. One of: meters, feet, miles, kilometers, kilograms, pounds, celsius, fahrenheit.")
-    fromUnit: String,
-    @LLMToolArguments("toUnit", description: "Target unit. Same options as fromUnit.")
-    toUnit: String
-) async throws -> String
+/// Converts a value from one unit to another. Supports length, weight, and temperature.
+@LLMTool
+public struct ConvertUnit: AgentLLMTool {
+    @LLMToolArguments
+    public struct Arguments {
+        @LLMToolGuide(description: "The numeric value to convert.")
+        var value: Double
+        @LLMToolGuide(description: "Source unit. One of: meters, feet, miles, kilometers, kilograms, pounds, celsius, fahrenheit.")
+        var fromUnit: String
+        @LLMToolGuide(description: "Target unit. Same options as fromUnit.")
+        var toUnit: String
+    }
+    public static var isConcurrencySafe: Bool { true }
+    public func call(arguments: Arguments) async throws -> ToolOutput { ... }
+}
 ```
 
-Implementation: a simple lookup table of conversion factors. Returns the result formatted to 4 decimal places. Throws `ToolUsingAgentError.toolCallFailed("convertUnit")` if either unit is unrecognized.
+Implementation: handle temperature as a special case, then use a lookup table of `(factor, dimension)` pairs. Return result formatted to 4 decimal places. Throw `ToolUsingAgentError.toolCallFailed("convert_unit")` on unknown or mismatched units.
 
-### formatNumber
+### FormatNumber
+
+Tool name (macro-derived): `format_number`
 
 ```swift
-@LLMTool(description: "Formats a number with a specified number of decimal places.")
-func formatNumber(
-    @LLMToolArguments("value", description: "The number to format.")
-    value: Double,
-    @LLMToolArguments("decimalPlaces", description: "Number of decimal places. 0–10.")
-    decimalPlaces: Int
-) async throws -> String
+/// Formats a number with a specified number of decimal places.
+@LLMTool
+public struct FormatNumber: AgentLLMTool {
+    @LLMToolArguments
+    public struct Arguments {
+        @LLMToolGuide(description: "The number to format.")
+        var value: Double
+        @LLMToolGuide(description: "Number of decimal places. 0–10.", .range(0...10))
+        var decimalPlaces: Int
+    }
+    public static var isConcurrencySafe: Bool { true }
+    public func call(arguments: Arguments) async throws -> ToolOutput { ... }
+}
 ```
 
-Implementation: `String(format: "%.\(decimalPlaces)f", value)`. Clamps `decimalPlaces` to `0...10`.
+Implementation: clamp `decimalPlaces` to `0...10`, return `ToolOutput(content: String(format: "%.\(clamped)f", value))`.
 
 ---
 
 ## Tasks (execute steps)
 
-1. Validate `goal` is non-empty. Set `_status = .error(ToolUsingAgentError.emptyGoal)` and throw if empty.
-2. Reset `_agentContext`. Set `_status = .running`. Emit `agentStarted`. Append `.userMessage(goal)`.
-3. Build the initial `ResponseRequest` with all three tool definitions registered.
-4. Enter the tool dispatch loop (see `Shared-Tool-Concurrency.md`):
-   a. Check `Task.isCancelled` — throw `CancellationError` if cancelled.
-   b. Call `retryWithBackoff` wrapping `_llmClient.send(request)`.
-   c. If the response contains no tool calls: extract `firstOutputText`, guard non-empty, append `.assistantMessage`, set `.completed`, emit `agentCompleted`, return.
-   d. If the response contains tool calls: execute via `ToolExecutor`, append `.toolCall` and `.toolResult` entries in receive order, feed results back as the next request.
-   e. Guard `iteration <= 10` — throw `toolLoopExceeded` if exceeded.
-5. On any error path: set `_status = .error(e)`, emit `agentFailed`, throw.
+1. Build `ToolRegistry`, register `Calculate()`, `ConvertUnit()`, `FormatNumber()`. Set `permissionGate` if configured.
+2. Call `AgentToolLoop.run(client:config:goal:tools:transcript:maxIterations:hooks:)` with `maxIterations: 10`.
+3. Guard non-empty result → throw `ToolUsingAgentError.noResponseContent`.
+4. Return result string.
+
+`AgentToolLoop` handles the full dispatch cycle: sending the request with tool definitions, detecting tool calls, dispatching safe tools concurrently (via `isConcurrencySafe`), appending `.toolCall` / `.toolResult` transcript entries in receive order, feeding results back, and enforcing `maxIterations`.
 
 ---
 

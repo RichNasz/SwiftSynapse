@@ -8,17 +8,20 @@
 
 | File | Target | Purpose |
 |------|--------|---------|
-| `Sources/PerformanceOptimizer.swift` | `PerformanceOptimizerAgent` library | Main actor + error enum |
-| `Sources/PerformanceOptimizer+Tools.swift` | `PerformanceOptimizerAgent` library | Tool implementations |
+| `Sources/PerformanceOptimizer.swift` | `PerformanceOptimizerAgent` library | Error enum + tool structs + agent actor |
 | `CLI/PerformanceOptimizerCLI.swift` | `performance-optimizer` executable | ArgumentParser CLI |
 | `Tests/PerformanceOptimizerTests.swift` | `PerformanceOptimizerTests` test target | Swift Testing suite |
+
+All tool structs live in `Sources/PerformanceOptimizer.swift` above the agent actor, separated by `// MARK: - Tool Definitions`.
 
 ---
 
 ## Shared Types Used
 
 - `AgentConfiguration` — centralized config
-- `AgentToolProtocol` / `ToolRegistry` — typed tool registration
+- `@LLMTool` / `@LLMToolArguments` / `@LLMToolGuide` — macro stack for compile-time tool schema generation
+- `AgentLLMTool` — protocol bridging `LLMTool` and `AgentToolProtocol`; only `call(arguments:) -> ToolOutput` required
+- `ToolRegistry` — registers `AgentLLMTool` conformances and dispatches calls
 - `AgentToolLoop.run()` — tool dispatch loop with recovery integration
 - `RecoveryChain` / `ReactiveCompactionStrategy` / `OutputTokenEscalationStrategy` / `ContinuationStrategy` — self-healing
 - `RateLimitState` / `RateLimitPolicy` / `retryWithRateLimit` — rate-limit-aware retry
@@ -40,7 +43,7 @@
 6. `Shared-Context-Management.md` — `SlidingWindowCompressor` for compaction
 7. `Shared-Agent-Tool-Loop.md` — `AgentToolLoop.run()` with recovery chain
 8. `Shared-Hook-System.md` — `transcriptRepaired`, `agentCancelled`
-9. `Shared-Tool-Registry.md` — tool conformances
+9. `Shared-Tool-Registry.md` — `AgentLLMTool` conformances
 10. `Shared-Error-Strategy.md` — error enum, status-before-throw
 
 ---

@@ -19,7 +19,9 @@
 
 - `AgentConfiguration` — centralized config
 - `AgentPlugin` / `PluginManager` / `PluginContext` — plugin lifecycle
-- `AgentToolProtocol` / `ToolRegistry` — typed tool registration (by plugins)
+- `@LLMTool` / `@LLMToolArguments` / `@LLMToolGuide` — macro stack for compile-time tool schema generation
+- `AgentLLMTool` — protocol bridging `LLMTool` and `AgentToolProtocol`; only `call(arguments:) -> ToolOutput` required
+- `ToolRegistry` — registers `AgentLLMTool` conformances and dispatches calls (populated by plugins)
 - `AgentToolLoop.run()` — tool dispatch loop
 - `SystemPromptBuilder` — prompt composition with plugin-contributed sections
 - `AgentHookPipeline` / `ClosureHook` — hooks registered by plugins
@@ -38,7 +40,7 @@
 4. `Shared-System-Prompt-Builder.md` — prompt composition with plugin capabilities
 5. `Shared-Hook-System.md` — plugin-registered hooks
 6. `Shared-Telemetry.md` — `InMemoryTelemetrySink`, `pluginActivated`/`pluginError` events
-7. `Shared-Tool-Registry.md` — `AgentToolProtocol` conformances (in plugins)
+7. `Shared-Tool-Registry.md` — `AgentLLMTool` conformances (registered by plugins)
 8. `Shared-Error-Strategy.md` — error enum, status-before-throw
 
 ---

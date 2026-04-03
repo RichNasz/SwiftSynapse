@@ -8,10 +8,11 @@
 
 | File | Target | Purpose |
 |------|--------|---------|
-| `Sources/TaskPlanner.swift` | `TaskPlannerAgent` library | Main actor + error enum |
-| `Sources/TaskPlanner+Tools.swift` | `TaskPlannerAgent` library | Tool implementations |
+| `Sources/TaskPlanner.swift` | `TaskPlannerAgent` library | Error enum + tool structs + agent actor |
 | `CLI/TaskPlannerCLI.swift` | `task-planner` executable | ArgumentParser CLI |
 | `Tests/TaskPlannerTests.swift` | `TaskPlannerTests` test target | Swift Testing suite |
+
+All tool structs live in `Sources/TaskPlanner.swift` above the agent actor, separated by `// MARK: - Tool Definitions`.
 
 ---
 
@@ -19,7 +20,9 @@
 
 - `AgentConfiguration` — centralized config
 - `ConfigurationResolver` / `EnvironmentConfigSource` / `FileConfigSource` — layered config hierarchy
-- `AgentToolProtocol` / `ToolRegistry` — typed tool registration
+- `@LLMTool` / `@LLMToolArguments` / `@LLMToolGuide` — macro stack for compile-time tool schema generation
+- `AgentLLMTool` — protocol bridging `LLMTool` and `AgentToolProtocol`; only `call(arguments:) -> ToolOutput` required
+- `ToolRegistry` — registers `AgentLLMTool` conformances and dispatches calls
 - `AgentToolLoop.run()` — tool dispatch loop
 - `CoordinationRunner` / `CoordinationPhase` / `CoordinationResult` — DAG-based phase execution
 - `SubagentRunner` / `SubagentContext` / `SubagentLifecycleMode` / `SubagentResult` — subagent spawning
@@ -44,7 +47,7 @@
 6. `Shared-System-Prompt-Builder.md` — prioritized prompt composition
 7. `Shared-Agent-Tool-Loop.md` — `AgentToolLoop.run()`
 8. `Shared-Hook-System.md` — coordination phase hooks, lifecycle hooks
-9. `Shared-Tool-Registry.md` — tool conformances
+9. `Shared-Tool-Registry.md` — `AgentLLMTool` conformances
 10. `Shared-Error-Strategy.md` — error enum, status-before-throw
 
 ---

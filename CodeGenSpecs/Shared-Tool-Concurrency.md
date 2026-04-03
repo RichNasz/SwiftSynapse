@@ -12,12 +12,14 @@ Tool-using agents can receive multiple simultaneous tool calls from the LLM in a
 
 ## Concurrency Safety Declaration
 
-Every tool type declares whether it is safe to run concurrently with other tools. This is expressed as a computed property on the tool struct or class:
+Every tool type declares whether it is safe to run concurrently with other tools. This is expressed as a static computed property on the tool struct:
 
 ```swift
-// For tools defined via @LLMTool macro:
-var isConcurrencySafe: Bool { true }   // or false
+// On any AgentLLMTool conformance:
+public static var isConcurrencySafe: Bool { true }   // or false
 ```
+
+`AgentLLMTool` defaults `isConcurrencySafe` to `false`. Override to `true` for pure, read-only tools.
 
 Guidelines:
 - **`true`** (concurrent-safe): Pure functions, read-only operations, web fetches, database reads, arithmetic, unit conversion, text processing.
@@ -168,10 +170,12 @@ while true {
 
 ---
 
-## High-Level Alternatives
+## Preferred Approach
 
-The manual `ToolExecutor` + dispatch loop pattern above is the low-level approach. For most tool-using agents, prefer:
+The `ToolExecutor` actor and manual `dispatchTool` switch shown above are **low-level** patterns. All new tool-using agents should use:
 
-- **`AgentToolLoop`** — handles the full loop with hooks, permissions, guardrails, recovery, and telemetry integration. See `Shared-Agent-Tool-Loop.md`.
+- **`ToolRegistry` + `AgentToolLoop.run()`** — register `AgentLLMTool` conformances in a registry; pass it to `AgentToolLoop`, which handles concurrency scheduling, transcript appending, hooks, permissions, guardrails, and result budgeting automatically. See `Shared-Tool-Registry.md` and `Shared-Agent-Tool-Loop.md`.
 - **`StreamingToolExecutor`** — dispatches tools concurrently during streaming responses. See `Shared-Streaming-Tool-Executor.md`.
 - **Result truncation** — automatic handling of oversized tool results. See `Shared-Result-Truncation.md`.
+
+The `ToolExecutor` + `dispatchTool` approach remains valid for agents that need custom dispatch logic not supported by `AgentToolLoop`.

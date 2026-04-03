@@ -8,19 +8,21 @@
 
 | File | Target | Purpose |
 |------|--------|---------|
-| `Sources/PRReviewer.swift` | `PRReviewerAgent` library | Main actor + error enum |
-| `Sources/PRReviewer+Tools.swift` | `PRReviewerAgent` library | Tool implementations (AgentToolProtocol conformances) |
-| `Sources/PRReviewer+Guardrails.swift` | `PRReviewerAgent` library | Custom guardrail policies |
+| `Sources/PRReviewer.swift` | `PRReviewerAgent` library | Error enum + tool structs + agent actor |
 | `CLI/PRReviewerCLI.swift` | `pr-reviewer` executable | ArgumentParser CLI with terminal ApprovalDelegate |
 | `Tests/PRReviewerTests.swift` | `PRReviewerTests` test target | Swift Testing suite |
+
+All tool structs live in `Sources/PRReviewer.swift` above the agent actor, separated by `// MARK: - Tool Definitions`.
 
 ---
 
 ## Shared Types Used
 
 - `AgentConfiguration` — centralized config with validation
-- `AgentToolProtocol` / `ToolRegistry` — typed tool registration
-- `AgentToolLoop.runStreaming()` — streaming tool dispatch loop
+- `@LLMTool` / `@LLMToolArguments` / `@LLMToolGuide` — macro stack for compile-time tool schema generation
+- `AgentLLMTool` — protocol bridging `LLMTool` and `AgentToolProtocol`; only `call(arguments:) -> ToolOutput` required
+- `ToolRegistry` — registers `AgentLLMTool` conformances and dispatches calls
+- `AgentToolLoop.run()` — tool dispatch loop with safety integration
 - `StreamingToolExecutor` — concurrent tool dispatch during streaming
 - `GuardrailPipeline` / `GuardrailPolicy` / `ContentFilter` — content safety
 - `PermissionGate` / `ToolListPolicy` / `ApprovalDelegate` — tool access control
@@ -42,7 +44,7 @@
 6. `Shared-Result-Truncation.md` — `ResultTruncator` for large diffs
 7. `Shared-Caching.md` — tool result caching for repeated analyses
 8. `Shared-Hook-System.md` — `guardrailTriggered`, `preToolUse`, `postToolUse` hooks
-9. `Shared-Tool-Registry.md` — `AgentToolProtocol` conformances
+9. `Shared-Tool-Registry.md` — `AgentLLMTool` conformances
 10. `Shared-Error-Strategy.md` — error enum, status-before-throw
 
 ---
