@@ -11,35 +11,21 @@ public enum ToolUsingAgentError: Error, Sendable {
     case toolLoopExceeded
 }
 
-// MARK: - Tool Definitions (AgentToolProtocol)
+// MARK: - Tool Definitions
 
 /// Evaluates a basic arithmetic expression and returns the result as a Double.
-public struct CalculateTool: AgentToolProtocol {
-    public struct Input: Codable, Sendable {
-        public let expression: String
-    }
-    public typealias Output = String
-
-    public static let name = "calculate"
-    public static let description = "Evaluates a basic arithmetic expression and returns the result as a Double."
-    public static let isConcurrencySafe = true
-
-    public static var inputSchema: FunctionToolParam {
-        FunctionToolParam(
-            name: name,
-            description: description,
-            parameters: .object(
-                properties: [
-                    ("expression", .string(description: "A math expression using +, -, *, /. Example: '144 / 12'"))
-                ],
-                required: ["expression"]
-            ),
-            strict: true
-        )
+@LLMTool
+public struct Calculate: AgentLLMTool {
+    @LLMToolArguments
+    public struct Arguments {
+        @LLMToolGuide(description: "A math expression using +, -, *, /. Example: '144 / 12'")
+        var expression: String
     }
 
-    public func execute(input: Input) async throws -> String {
-        let sanitized = input.expression.filter { "0123456789.+-*/() ".contains($0) }
+    public static var isConcurrencySafe: Bool { true }
+
+    public func call(arguments: Arguments) async throws -> ToolOutput {
+        let sanitized = arguments.expression.filter { "0123456789.+-*/() ".contains($0) }
         guard !sanitized.isEmpty else {
             throw ToolUsingAgentError.toolCallFailed("calculate")
         }
@@ -47,38 +33,24 @@ public struct CalculateTool: AgentToolProtocol {
         guard let result = expr.expressionValue(with: nil, context: nil) as? NSNumber else {
             throw ToolUsingAgentError.toolCallFailed("calculate")
         }
-        return "\(result.doubleValue)"
+        return ToolOutput(content: "\(result.doubleValue)")
     }
 }
 
 /// Converts a value from one unit to another. Supports length, weight, and temperature.
-public struct ConvertUnitTool: AgentToolProtocol {
-    public struct Input: Codable, Sendable {
-        public let value: Double
-        public let fromUnit: String
-        public let toUnit: String
+@LLMTool
+public struct ConvertUnit: AgentLLMTool {
+    @LLMToolArguments
+    public struct Arguments {
+        @LLMToolGuide(description: "The numeric value to convert.")
+        var value: Double
+        @LLMToolGuide(description: "Source unit. One of: meters, feet, miles, kilometers, kilograms, pounds, celsius, fahrenheit.")
+        var fromUnit: String
+        @LLMToolGuide(description: "Target unit. Same options as fromUnit.")
+        var toUnit: String
     }
-    public typealias Output = String
 
-    public static let name = "convertUnit"
-    public static let description = "Converts a value from one unit to another. Supports length, weight, and temperature."
-    public static let isConcurrencySafe = true
-
-    public static var inputSchema: FunctionToolParam {
-        FunctionToolParam(
-            name: name,
-            description: description,
-            parameters: .object(
-                properties: [
-                    ("value", .number(description: "The numeric value to convert.", minimum: nil, maximum: nil)),
-                    ("fromUnit", .string(description: "Source unit. One of: meters, feet, miles, kilometers, kilograms, pounds, celsius, fahrenheit.")),
-                    ("toUnit", .string(description: "Target unit. Same options as fromUnit."))
-                ],
-                required: ["value", "fromUnit", "toUnit"]
-            ),
-            strict: true
-        )
-    }
+    public static var isConcurrencySafe: Bool { true }
 
     private static let conversionToBase: [String: (factor: Double, dimension: String)] = [
         "meters": (1.0, "length"),
@@ -89,68 +61,51 @@ public struct ConvertUnitTool: AgentToolProtocol {
         "pounds": (0.453592, "weight"),
     ]
 
-    public func execute(input: Input) async throws -> String {
-        // Temperature is a special case
-        if input.fromUnit == "celsius" && input.toUnit == "fahrenheit" {
-            let result = input.value * 9.0 / 5.0 + 32.0
-            return String(format: "%.4f", result)
+    public func call(arguments: Arguments) async throws -> ToolOutput {
+        if arguments.fromUnit == "celsius" && arguments.toUnit == "fahrenheit" {
+            let result = arguments.value * 9.0 / 5.0 + 32.0
+            return ToolOutput(content: String(format: "%.4f", result))
         }
-        if input.fromUnit == "fahrenheit" && input.toUnit == "celsius" {
-            let result = (input.value - 32.0) * 5.0 / 9.0
-            return String(format: "%.4f", result)
+        if arguments.fromUnit == "fahrenheit" && arguments.toUnit == "celsius" {
+            let result = (arguments.value - 32.0) * 5.0 / 9.0
+            return ToolOutput(content: String(format: "%.4f", result))
         }
-        if (input.fromUnit == "celsius" || input.fromUnit == "fahrenheit") &&
-           (input.toUnit == "celsius" || input.toUnit == "fahrenheit") &&
-           input.fromUnit == input.toUnit {
-            return String(format: "%.4f", input.value)
+        if (arguments.fromUnit == "celsius" || arguments.fromUnit == "fahrenheit") &&
+           (arguments.toUnit == "celsius" || arguments.toUnit == "fahrenheit") &&
+           arguments.fromUnit == arguments.toUnit {
+            return ToolOutput(content: String(format: "%.4f", arguments.value))
         }
-
-        guard let from = Self.conversionToBase[input.fromUnit] else {
-            throw ToolUsingAgentError.toolCallFailed("convertUnit")
+        guard let from = Self.conversionToBase[arguments.fromUnit] else {
+            throw ToolUsingAgentError.toolCallFailed("convert_unit")
         }
-        guard let to = Self.conversionToBase[input.toUnit] else {
-            throw ToolUsingAgentError.toolCallFailed("convertUnit")
+        guard let to = Self.conversionToBase[arguments.toUnit] else {
+            throw ToolUsingAgentError.toolCallFailed("convert_unit")
         }
         guard from.dimension == to.dimension else {
-            throw ToolUsingAgentError.toolCallFailed("convertUnit")
+            throw ToolUsingAgentError.toolCallFailed("convert_unit")
         }
-
-        let baseValue = input.value * from.factor
+        let baseValue = arguments.value * from.factor
         let result = baseValue / to.factor
-        return String(format: "%.4f", result)
+        return ToolOutput(content: String(format: "%.4f", result))
     }
 }
 
 /// Formats a number with a specified number of decimal places.
-public struct FormatNumberTool: AgentToolProtocol {
-    public struct Input: Codable, Sendable {
-        public let value: Double
-        public let decimalPlaces: Int
-    }
-    public typealias Output = String
-
-    public static let name = "formatNumber"
-    public static let description = "Formats a number with a specified number of decimal places."
-    public static let isConcurrencySafe = true
-
-    public static var inputSchema: FunctionToolParam {
-        FunctionToolParam(
-            name: name,
-            description: description,
-            parameters: .object(
-                properties: [
-                    ("value", .number(description: "The number to format.", minimum: nil, maximum: nil)),
-                    ("decimalPlaces", .integer(description: "Number of decimal places. 0\u{2013}10.", minimum: 0, maximum: 10))
-                ],
-                required: ["value", "decimalPlaces"]
-            ),
-            strict: true
-        )
+@LLMTool
+public struct FormatNumber: AgentLLMTool {
+    @LLMToolArguments
+    public struct Arguments {
+        @LLMToolGuide(description: "The number to format.")
+        var value: Double
+        @LLMToolGuide(description: "Number of decimal places. 0–10.", .range(0...10))
+        var decimalPlaces: Int
     }
 
-    public func execute(input: Input) async throws -> String {
-        let clamped = min(max(input.decimalPlaces, 0), 10)
-        return String(format: "%.\(clamped)f", input.value)
+    public static var isConcurrencySafe: Bool { true }
+
+    public func call(arguments: Arguments) async throws -> ToolOutput {
+        let clamped = min(max(arguments.decimalPlaces, 0), 10)
+        return ToolOutput(content: String(format: "%.\(clamped)f", arguments.value))
     }
 }
 
@@ -175,19 +130,13 @@ public actor ToolUsingAgent {
         self.config = configuration
     }
 
-    /// Legacy convenience init for backward compatibility.
-    public init(serverURL: String, modelName: String, apiKey: String? = nil, maxRetries: Int = 3) throws {
-        let config = try AgentConfiguration(serverURL: serverURL, modelName: modelName, apiKey: apiKey, maxRetries: maxRetries)
-        try self.init(configuration: config)
-    }
-
     public func execute(goal: String) async throws -> String {
         let client = try config.buildClient()
 
         let tools = ToolRegistry()
-        tools.register(CalculateTool())
-        tools.register(ConvertUnitTool())
-        tools.register(FormatNumberTool())
+        tools.register(Calculate())
+        tools.register(ConvertUnit())
+        tools.register(FormatNumber())
 
         if let gate = permissionGate {
             tools.permissionGate = gate

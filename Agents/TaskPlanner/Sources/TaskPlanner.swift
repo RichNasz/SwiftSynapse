@@ -10,40 +10,25 @@ public enum TaskPlannerError: Error, Sendable {
     case synthesisFailedNoResults
 }
 
-// MARK: - Tool Definitions (AgentToolProtocol)
+// MARK: - Tool Definitions
 
-/// Breaks a complex goal into phases with dependency information.
-public struct BreakdownGoalTool: AgentToolProtocol {
-    public struct Input: Codable, Sendable {
-        public let goal: String
-    }
-    public typealias Output = String
-
-    public static let name = "breakdownGoal"
-    public static let description = "Breaks a complex goal into phases with dependencies. Returns a JSON array of phases."
-    public static let isConcurrencySafe = true
-
-    public static var inputSchema: FunctionToolParam {
-        FunctionToolParam(
-            name: name,
-            description: description,
-            parameters: .object(
-                properties: [
-                    ("goal", .string(description: "The complex goal to decompose into phases with dependencies."))
-                ],
-                required: ["goal"]
-            ),
-            strict: true
-        )
+/// Breaks a complex goal into phases with dependencies. Returns a JSON array of phases.
+@LLMTool
+public struct BreakdownGoal: AgentLLMTool {
+    @LLMToolArguments
+    public struct Arguments {
+        @LLMToolGuide(description: "The complex goal to decompose into phases with dependencies.")
+        var goal: String
     }
 
-    public func execute(input: Input) async throws -> String {
-        // Returns the goal wrapped in a JSON response suggesting the LLM should break it down
+    public static var isConcurrencySafe: Bool { true }
+
+    public func call(arguments: Arguments) async throws -> ToolOutput {
         let phases: [[String: Any]] = [
             [
                 "id": "phase-1",
                 "name": "Research & Analysis",
-                "description": "Research and analyze: \(input.goal)",
+                "description": "Research and analyze: \(arguments.goal)",
                 "dependencies": [] as [String]
             ],
             [
@@ -60,109 +45,69 @@ public struct BreakdownGoalTool: AgentToolProtocol {
             ]
         ]
         let data = try JSONSerialization.data(withJSONObject: phases, options: [.sortedKeys])
-        return String(data: data, encoding: .utf8) ?? "[]"
+        return ToolOutput(content: String(data: data, encoding: .utf8) ?? "[]")
     }
 }
 
-/// Assigns priority scores to phases and determines execution order.
-public struct PrioritizeTasksTool: AgentToolProtocol {
-    public struct Input: Codable, Sendable {
-        public let phases: String
-    }
-    public typealias Output = String
-
-    public static let name = "prioritizeTasks"
-    public static let description = "Prioritizes phases by adding priority scores and determining execution order."
-    public static let isConcurrencySafe = true
-
-    public static var inputSchema: FunctionToolParam {
-        FunctionToolParam(
-            name: name,
-            description: description,
-            parameters: .object(
-                properties: [
-                    ("phases", .string(description: "JSON array of phases to prioritize."))
-                ],
-                required: ["phases"]
-            ),
-            strict: true
-        )
+/// Prioritizes phases by adding priority scores and determining execution order.
+@LLMTool
+public struct PrioritizeTasks: AgentLLMTool {
+    @LLMToolArguments
+    public struct Arguments {
+        @LLMToolGuide(description: "JSON array of phases to prioritize.")
+        var phases: String
     }
 
-    public func execute(input: Input) async throws -> String {
-        // Parses phases JSON array and adds priority scores
-        guard let data = input.phases.data(using: .utf8),
+    public static var isConcurrencySafe: Bool { true }
+
+    public func call(arguments: Arguments) async throws -> ToolOutput {
+        guard let data = arguments.phases.data(using: .utf8),
               let parsed = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
-            return #"{"error":"Invalid phases JSON","prioritized":[]}"#
+            return ToolOutput(content: #"{"error":"Invalid phases JSON","prioritized":[]}"#)
         }
 
         var prioritized: [[String: Any]] = []
         for (index, phase) in parsed.enumerated() {
             var updated = phase
-            let priority = max(100 - (index * 10), 10)
-            updated["priority"] = priority
+            updated["priority"] = max(100 - (index * 10), 10)
             updated["executionOrder"] = index + 1
             prioritized.append(updated)
         }
 
-        let result: [String: Any] = [
-            "prioritized": prioritized,
-            "totalPhases": prioritized.count
-        ]
+        let result: [String: Any] = ["prioritized": prioritized, "totalPhases": prioritized.count]
         let resultData = try JSONSerialization.data(withJSONObject: result, options: [.sortedKeys])
-        return String(data: resultData, encoding: .utf8) ?? #"{"prioritized":[]}"#
+        return ToolOutput(content: String(data: resultData, encoding: .utf8) ?? #"{"prioritized":[]}"#)
     }
 }
 
-/// Synthesizes phase results into a unified Markdown plan.
-public struct SynthesizeResultsTool: AgentToolProtocol {
-    public struct Input: Codable, Sendable {
-        public let phaseResults: String
-    }
-    public typealias Output = String
-
-    public static let name = "synthesizeResults"
-    public static let description = "Combines phase results into a unified Markdown plan document."
-    public static let isConcurrencySafe = true
-
-    public static var inputSchema: FunctionToolParam {
-        FunctionToolParam(
-            name: name,
-            description: description,
-            parameters: .object(
-                properties: [
-                    ("phaseResults", .string(description: "JSON map of phase ID to result content."))
-                ],
-                required: ["phaseResults"]
-            ),
-            strict: true
-        )
+/// Combines phase results into a unified Markdown plan document.
+@LLMTool
+public struct SynthesizeResults: AgentLLMTool {
+    @LLMToolArguments
+    public struct Arguments {
+        @LLMToolGuide(description: "JSON map of phase ID to result content.")
+        var phaseResults: String
     }
 
-    public func execute(input: Input) async throws -> String {
-        // Formats the phase results into a structured Markdown document with sections
-        guard let data = input.phaseResults.data(using: .utf8),
+    public static var isConcurrencySafe: Bool { true }
+
+    public func call(arguments: Arguments) async throws -> ToolOutput {
+        guard let data = arguments.phaseResults.data(using: .utf8),
               let parsed = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            return "# Plan\n\nNo results available."
+            return ToolOutput(content: "# Plan\n\nNo results available.")
         }
 
-        var markdown = "# Unified Plan\n\n"
-        markdown += "## Overview\n\n"
-        markdown += "This plan synthesizes results from \(parsed.count) phase(s).\n\n"
-
-        let sortedKeys = parsed.keys.sorted()
-        for key in sortedKeys {
-            let value = parsed[key]
+        var markdown = "# Unified Plan\n\n## Overview\n\nThis plan synthesizes results from \(parsed.count) phase(s).\n\n"
+        for key in parsed.keys.sorted() {
             markdown += "## \(key)\n\n"
-            if let stringValue = value as? String {
+            if let stringValue = parsed[key] as? String {
                 markdown += "\(stringValue)\n\n"
             } else {
-                markdown += "Result: \(String(describing: value))\n\n"
+                markdown += "Result: \(String(describing: parsed[key]!))\n\n"
             }
         }
-
         markdown += "---\n\n*Plan generated by TaskPlanner agent.*\n"
-        return markdown
+        return ToolOutput(content: markdown)
     }
 }
 
@@ -183,19 +128,13 @@ public actor TaskPlanner {
         self.config = configuration
     }
 
-    /// Legacy convenience init for backward compatibility.
-    public init(serverURL: String, modelName: String, apiKey: String? = nil, maxRetries: Int = 3) throws {
-        let config = try AgentConfiguration(serverURL: serverURL, modelName: modelName, apiKey: apiKey, maxRetries: maxRetries)
-        try self.init(configuration: config)
-    }
-
     public func execute(goal: String) async throws -> String {
         let client = try config.buildClient()
 
         let tools = ToolRegistry()
-        tools.register(BreakdownGoalTool())
-        tools.register(PrioritizeTasksTool())
-        tools.register(SynthesizeResultsTool())
+        tools.register(BreakdownGoal())
+        tools.register(PrioritizeTasks())
+        tools.register(SynthesizeResults())
 
         let systemPrompt = "You are a task planning coordinator. Break complex goals into phases with dependencies, prioritize them, and synthesize results into a unified plan."
 

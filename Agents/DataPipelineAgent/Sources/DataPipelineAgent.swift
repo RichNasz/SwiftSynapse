@@ -9,192 +9,127 @@ public enum DataPipelineAgentError: Error, Sendable {
     case dataFileNotFound(String)
 }
 
-// MARK: - Tool Definitions (AgentToolProtocol)
+// MARK: - Tool Definitions
 
 /// Reads a CSV file and returns its contents as a JSON array of row objects.
-public struct ReadCSVTool: AgentToolProtocol {
-    public struct Input: Codable, Sendable {
-        public let filePath: String
-    }
-    public typealias Output = String
-
-    public static let name = "readCSV"
-    public static let description = "Reads a CSV file and returns its contents as a JSON array of row objects."
-    public static let isConcurrencySafe = true
-
-    public static var inputSchema: FunctionToolParam {
-        FunctionToolParam(
-            name: name,
-            description: description,
-            parameters: .object(
-                properties: [
-                    ("filePath", .string(description: "Path to the CSV file to read."))
-                ],
-                required: ["filePath"]
-            ),
-            strict: true
-        )
+@LLMTool
+public struct ReadCSV: AgentLLMTool {
+    @LLMToolArguments
+    public struct Arguments {
+        @LLMToolGuide(description: "Path to the CSV file to read.")
+        var filePath: String
     }
 
-    public func execute(input: Input) async throws -> String {
-        // Mock CSV data representing a sample dataset
+    public static var isConcurrencySafe: Bool { true }
+
+    public func call(arguments: Arguments) async throws -> ToolOutput {
         let mockData: [[String: Any]] = [
-            ["name": "Alice", "age": 30, "department": "Engineering", "salary": 95000],
-            ["name": "Bob", "age": 25, "department": "Marketing", "salary": 72000],
+            ["name": "Alice",   "age": 30, "department": "Engineering", "salary": 95000],
+            ["name": "Bob",     "age": 25, "department": "Marketing",   "salary": 72000],
             ["name": "Charlie", "age": 35, "department": "Engineering", "salary": 110000],
-            ["name": "Diana", "age": 28, "department": "Sales", "salary": 68000],
-            ["name": "Eve", "age": 32, "department": "Engineering", "salary": 102000]
+            ["name": "Diana",   "age": 28, "department": "Sales",       "salary": 68000],
+            ["name": "Eve",     "age": 32, "department": "Engineering", "salary": 102000]
         ]
         let jsonData = try JSONSerialization.data(withJSONObject: mockData, options: [.sortedKeys])
         guard let jsonString = String(data: jsonData, encoding: .utf8) else {
             throw DataPipelineAgentError.noResponseContent
         }
-        return jsonString
+        return ToolOutput(content: jsonString)
     }
 }
 
-/// Filters a JSON array of objects by a column value matching a predicate.
-public struct FilterCSVTool: AgentToolProtocol {
-    public struct Input: Codable, Sendable {
-        public let data: String
-        public let column: String
-        public let predicate: String
-    }
-    public typealias Output = String
-
-    public static let name = "filterCSV"
-    public static let description = "Filters a JSON array of objects by a column value matching a predicate string."
-    public static let isConcurrencySafe = true
-
-    public static var inputSchema: FunctionToolParam {
-        FunctionToolParam(
-            name: name,
-            description: description,
-            parameters: .object(
-                properties: [
-                    ("data", .string(description: "JSON array of row objects to filter.")),
-                    ("column", .string(description: "Column name to filter on.")),
-                    ("predicate", .string(description: "Value to match against the column."))
-                ],
-                required: ["data", "column", "predicate"]
-            ),
-            strict: true
-        )
+/// Filters a JSON array of objects by a column value matching a predicate string.
+@LLMTool
+public struct FilterCSV: AgentLLMTool {
+    @LLMToolArguments
+    public struct Arguments {
+        @LLMToolGuide(description: "JSON array of row objects to filter.")
+        var data: String
+        @LLMToolGuide(description: "Column name to filter on.")
+        var column: String
+        @LLMToolGuide(description: "Value to match against the column.")
+        var predicate: String
     }
 
-    public func execute(input: Input) async throws -> String {
-        guard let data = input.data.data(using: .utf8),
+    public static var isConcurrencySafe: Bool { true }
+
+    public func call(arguments: Arguments) async throws -> ToolOutput {
+        guard let data = arguments.data.data(using: .utf8),
               let array = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
-            return "[]"
+            return ToolOutput(content: "[]")
         }
         let filtered = array.filter { row in
-            guard let value = row[input.column] else { return false }
-            return "\(value)" == input.predicate
+            guard let value = row[arguments.column] else { return false }
+            return "\(value)" == arguments.predicate
         }
         let resultData = try JSONSerialization.data(withJSONObject: filtered, options: [.sortedKeys])
-        return String(data: resultData, encoding: .utf8) ?? "[]"
+        return ToolOutput(content: String(data: resultData, encoding: .utf8) ?? "[]")
     }
 }
 
 /// Aggregates a numeric column in a JSON array using sum, avg, count, min, or max.
-public struct AggregateCSVTool: AgentToolProtocol {
-    public struct Input: Codable, Sendable {
-        public let data: String
-        public let column: String
-        public let operation: String
-    }
-    public typealias Output = String
-
-    public static let name = "aggregateCSV"
-    public static let description = "Aggregates a numeric column in a JSON array using sum, avg, count, min, or max."
-    public static let isConcurrencySafe = true
-
-    public static var inputSchema: FunctionToolParam {
-        FunctionToolParam(
-            name: name,
-            description: description,
-            parameters: .object(
-                properties: [
-                    ("data", .string(description: "JSON array of row objects.")),
-                    ("column", .string(description: "Numeric column name to aggregate.")),
-                    ("operation", .string(description: "Aggregation operation: sum, avg, count, min, or max."))
-                ],
-                required: ["data", "column", "operation"]
-            ),
-            strict: true
-        )
+@LLMTool
+public struct AggregateCSV: AgentLLMTool {
+    @LLMToolArguments
+    public struct Arguments {
+        @LLMToolGuide(description: "JSON array of row objects.")
+        var data: String
+        @LLMToolGuide(description: "Numeric column name to aggregate.")
+        var column: String
+        @LLMToolGuide(description: "Aggregation operation.", .anyOf(["sum", "avg", "count", "min", "max"]))
+        var operation: String
     }
 
-    public func execute(input: Input) async throws -> String {
-        guard let data = input.data.data(using: .utf8),
+    public static var isConcurrencySafe: Bool { true }
+
+    public func call(arguments: Arguments) async throws -> ToolOutput {
+        guard let data = arguments.data.data(using: .utf8),
               let array = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
-            return "0"
+            return ToolOutput(content: "0")
         }
         let values: [Double] = array.compactMap { row in
-            guard let val = row[input.column] else { return nil }
-            if let num = val as? NSNumber {
-                return num.doubleValue
-            }
+            guard let val = row[arguments.column] else { return nil }
+            if let num = val as? NSNumber { return num.doubleValue }
             return Double("\(val)")
         }
-        guard !values.isEmpty else { return "0" }
+        guard !values.isEmpty else { return ToolOutput(content: "0") }
 
         let result: Double
-        switch input.operation.lowercased() {
-        case "sum":
-            result = values.reduce(0, +)
-        case "avg":
-            result = values.reduce(0, +) / Double(values.count)
-        case "count":
-            result = Double(values.count)
-        case "min":
-            result = values.min() ?? 0
-        case "max":
-            result = values.max() ?? 0
-        default:
-            result = 0
+        switch arguments.operation.lowercased() {
+        case "sum":   result = values.reduce(0, +)
+        case "avg":   result = values.reduce(0, +) / Double(values.count)
+        case "count": result = Double(values.count)
+        case "min":   result = values.min() ?? 0
+        case "max":   result = values.max() ?? 0
+        default:      result = 0
         }
-        // Format without trailing zeros for clean output
+
         if result == result.rounded() && result < 1e15 {
-            return String(format: "%.0f", result)
+            return ToolOutput(content: String(format: "%.0f", result))
         }
-        return String(format: "%.4f", result)
+        return ToolOutput(content: String(format: "%.4f", result))
     }
 }
 
-/// Extracts a value from a JSON object using a dot-separated key path.
-public struct QueryJSONTool: AgentToolProtocol {
-    public struct Input: Codable, Sendable {
-        public let data: String
-        public let path: String
-    }
-    public typealias Output = String
-
-    public static let name = "queryJSON"
-    public static let description = "Extracts a value from a JSON object or array using a dot-separated key path."
-    public static let isConcurrencySafe = true
-
-    public static var inputSchema: FunctionToolParam {
-        FunctionToolParam(
-            name: name,
-            description: description,
-            parameters: .object(
-                properties: [
-                    ("data", .string(description: "JSON string to query.")),
-                    ("path", .string(description: "Dot-separated key path (e.g. 'users.0.name')."))
-                ],
-                required: ["data", "path"]
-            ),
-            strict: true
-        )
+/// Extracts a value from a JSON object or array using a dot-separated key path.
+@LLMTool
+public struct QueryJSON: AgentLLMTool {
+    @LLMToolArguments
+    public struct Arguments {
+        @LLMToolGuide(description: "JSON string to query.")
+        var data: String
+        @LLMToolGuide(description: "Dot-separated key path (e.g. 'users.0.name').")
+        var path: String
     }
 
-    public func execute(input: Input) async throws -> String {
-        guard let data = input.data.data(using: .utf8),
+    public static var isConcurrencySafe: Bool { true }
+
+    public func call(arguments: Arguments) async throws -> ToolOutput {
+        guard let data = arguments.data.data(using: .utf8),
               let root = try JSONSerialization.jsonObject(with: data) as? Any else {
-            return "null"
+            return ToolOutput(content: "null")
         }
-        let components = input.path.split(separator: ".").map(String.init)
+        let components = arguments.path.split(separator: ".").map(String.init)
         var current: Any = root
         for component in components {
             if let dict = current as? [String: Any], let next = dict[component] {
@@ -202,53 +137,35 @@ public struct QueryJSONTool: AgentToolProtocol {
             } else if let arr = current as? [Any], let index = Int(component), index >= 0, index < arr.count {
                 current = arr[index]
             } else {
-                return "null"
+                return ToolOutput(content: "null")
             }
         }
-        if let str = current as? String {
-            return str
-        }
-        if let num = current as? NSNumber {
-            return "\(num)"
-        }
+        if let str = current as? String { return ToolOutput(content: str) }
+        if let num = current as? NSNumber { return ToolOutput(content: "\(num)") }
         if JSONSerialization.isValidJSONObject(current) {
             let jsonData = try JSONSerialization.data(withJSONObject: current, options: [.sortedKeys])
-            return String(data: jsonData, encoding: .utf8) ?? "null"
+            return ToolOutput(content: String(data: jsonData, encoding: .utf8) ?? "null")
         }
-        return "\(current)"
+        return ToolOutput(content: "\(current)")
     }
 }
 
 /// Generates a formatted Markdown report from a title and JSON array of sections.
-public struct GenerateReportTool: AgentToolProtocol {
-    public struct Input: Codable, Sendable {
-        public let title: String
-        public let sections: String
-    }
-    public typealias Output = String
-
-    public static let name = "generateReport"
-    public static let description = "Generates a formatted Markdown report from a title and JSON array of sections."
-    public static let isConcurrencySafe = true
-
-    public static var inputSchema: FunctionToolParam {
-        FunctionToolParam(
-            name: name,
-            description: description,
-            parameters: .object(
-                properties: [
-                    ("title", .string(description: "Report title.")),
-                    ("sections", .string(description: "JSON array of section objects with 'heading' and 'body' keys."))
-                ],
-                required: ["title", "sections"]
-            ),
-            strict: true
-        )
+@LLMTool
+public struct GeneratePipelineReport: AgentLLMTool {
+    @LLMToolArguments
+    public struct Arguments {
+        @LLMToolGuide(description: "Report title.")
+        var title: String
+        @LLMToolGuide(description: "JSON array of section objects with 'heading' and 'body' keys.")
+        var sections: String
     }
 
-    public func execute(input: Input) async throws -> String {
-        var markdown = "# \(input.title)\n\n"
-        if let data = input.sections.data(using: .utf8),
+    public static var isConcurrencySafe: Bool { true }
+
+    public func call(arguments: Arguments) async throws -> ToolOutput {
+        var markdown = "# \(arguments.title)\n\n"
+        if let data = arguments.sections.data(using: .utf8),
            let sectionArray = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
             for section in sectionArray {
                 let heading = section["heading"] as? String ?? "Untitled"
@@ -256,9 +173,9 @@ public struct GenerateReportTool: AgentToolProtocol {
                 markdown += "## \(heading)\n\n\(body)\n\n"
             }
         } else {
-            markdown += input.sections + "\n"
+            markdown += arguments.sections + "\n"
         }
-        return markdown
+        return ToolOutput(content: markdown)
     }
 }
 
@@ -279,21 +196,15 @@ public actor DataPipelineAgent {
         self.config = configuration
     }
 
-    /// Legacy convenience init for backward compatibility.
-    public init(serverURL: String, modelName: String, apiKey: String? = nil, maxRetries: Int = 3) throws {
-        let config = try AgentConfiguration(serverURL: serverURL, modelName: modelName, apiKey: apiKey, maxRetries: maxRetries)
-        try self.init(configuration: config)
-    }
-
     public func execute(goal: String) async throws -> String {
         let client = try config.buildClient()
 
         let tools = ToolRegistry()
-        tools.register(ReadCSVTool())
-        tools.register(FilterCSVTool())
-        tools.register(AggregateCSVTool())
-        tools.register(QueryJSONTool())
-        tools.register(GenerateReportTool())
+        tools.register(ReadCSV())
+        tools.register(FilterCSV())
+        tools.register(AggregateCSV())
+        tools.register(QueryJSON())
+        tools.register(GeneratePipelineReport())
 
         let result = try await AgentToolLoop.run(
             client: client,

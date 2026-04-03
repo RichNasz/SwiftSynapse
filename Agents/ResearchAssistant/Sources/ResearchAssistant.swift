@@ -9,242 +9,158 @@ public enum ResearchAssistantError: Error, Sendable {
     case sessionCorrupted
 }
 
-// MARK: - Tool Definitions (AgentToolProtocol)
+// MARK: - Tool Definitions
 
 /// Searches the web for a given query and returns a JSON array of search results.
-public struct SearchWebTool: AgentToolProtocol {
-    public struct Input: Codable, Sendable {
-        public let query: String
-        public let maxResults: Int
-    }
-    public typealias Output = String
-
-    public static let name = "searchWeb"
-    public static let description = "Searches the web for a given query and returns a JSON array of search results."
-    public static let isConcurrencySafe = true
-
-    public static var inputSchema: FunctionToolParam {
-        FunctionToolParam(
-            name: name,
-            description: description,
-            parameters: .object(
-                properties: [
-                    ("query", .string(description: "The search query string.")),
-                    ("maxResults", .integer(description: "Maximum number of results to return.", minimum: 1, maximum: 20))
-                ],
-                required: ["query", "maxResults"]
-            ),
-            strict: true
-        )
+@LLMTool
+public struct SearchWeb: AgentLLMTool {
+    @LLMToolArguments
+    public struct Arguments {
+        @LLMToolGuide(description: "The search query string.")
+        var query: String
+        @LLMToolGuide(description: "Maximum number of results to return.", .range(1...20))
+        var maxResults: Int
     }
 
-    public func execute(input: Input) async throws -> String {
-        let clamped = min(max(input.maxResults, 1), 20)
+    public static var isConcurrencySafe: Bool { true }
+
+    public func call(arguments: Arguments) async throws -> ToolOutput {
+        let clamped = min(max(arguments.maxResults, 1), 20)
         var results: [[String: String]] = []
         for i in 1...clamped {
             results.append([
-                "title": "Result \(i) for '\(input.query)'",
+                "title": "Result \(i) for '\(arguments.query)'",
                 "url": "https://example.com/result/\(i)",
-                "snippet": "This is a summary of result \(i) related to '\(input.query)'."
+                "snippet": "This is a summary of result \(i) related to '\(arguments.query)'."
             ])
         }
         let data = try JSONSerialization.data(withJSONObject: results, options: [.prettyPrinted, .sortedKeys])
-        return String(data: data, encoding: .utf8) ?? "[]"
+        return ToolOutput(content: String(data: data, encoding: .utf8) ?? "[]")
     }
 }
 
 /// Reads the content of a document at a given URL and returns extracted text.
-public struct ReadDocumentTool: AgentToolProtocol {
-    public struct Input: Codable, Sendable {
-        public let url: String
-    }
-    public typealias Output = String
-
-    public static let name = "readDocument"
-    public static let description = "Reads the content of a document at a given URL and returns extracted text."
-    public static let isConcurrencySafe = true
-
-    public static var inputSchema: FunctionToolParam {
-        FunctionToolParam(
-            name: name,
-            description: description,
-            parameters: .object(
-                properties: [
-                    ("url", .string(description: "The URL of the document to read."))
-                ],
-                required: ["url"]
-            ),
-            strict: true
-        )
+@LLMTool
+public struct ReadDocument: AgentLLMTool {
+    @LLMToolArguments
+    public struct Arguments {
+        @LLMToolGuide(description: "The URL of the document to read.")
+        var url: String
     }
 
-    public func execute(input: Input) async throws -> String {
-        return """
-        [Document content extracted from \(input.url)]
+    public static var isConcurrencySafe: Bool { true }
+
+    public func call(arguments: Arguments) async throws -> ToolOutput {
+        return ToolOutput(content: """
+        [Document content extracted from \(arguments.url)]
 
         This is the full text content of the document. It contains detailed information \
         relevant to the research query. The document discusses key findings, methodologies, \
         and conclusions that can be cited in the final report.
-        """
+        """)
     }
 }
 
 /// Saves a piece of information to long-term memory with a category and tags.
-public struct SaveMemoryTool: AgentToolProtocol {
-    public struct Input: Codable, Sendable {
-        public let content: String
-        public let category: String
-        public let tags: [String]
-    }
-    public typealias Output = String
-
-    public static let name = "saveMemory"
-    public static let description = "Saves a piece of information to long-term memory with a category and tags."
-    public static let isConcurrencySafe = false
-
-    public static var inputSchema: FunctionToolParam {
-        FunctionToolParam(
-            name: name,
-            description: description,
-            parameters: .object(
-                properties: [
-                    ("content", .string(description: "The information to save.")),
-                    ("category", .string(description: "Category label (e.g. 'finding', 'source', 'note').")),
-                    ("tags", .array(items: .string(description: "A tag string.")))
-                ],
-                required: ["content", "category", "tags"]
-            ),
-            strict: true
-        )
+@LLMTool
+public struct SaveMemory: AgentLLMTool {
+    @LLMToolArguments
+    public struct Arguments {
+        @LLMToolGuide(description: "The information to save.")
+        var content: String
+        @LLMToolGuide(description: "Category label (e.g. 'finding', 'source', 'note').")
+        var category: String
+        @LLMToolGuide(description: "Tag strings for this memory entry.")
+        var tags: [String]
     }
 
-    public func execute(input: Input) async throws -> String {
+    public static var isConcurrencySafe: Bool { false }
+
+    public func call(arguments: Arguments) async throws -> ToolOutput {
         let memoryId = UUID().uuidString
-        return "Memory saved. ID: \(memoryId), category: \(input.category), tags: \(input.tags.joined(separator: ", "))"
+        return ToolOutput(content: "Memory saved. ID: \(memoryId), category: \(arguments.category), tags: \(arguments.tags.joined(separator: ", "))")
     }
 }
 
 /// Recalls memories matching a query and returns a JSON array of memory entries.
-public struct RecallMemoryTool: AgentToolProtocol {
-    public struct Input: Codable, Sendable {
-        public let query: String
-    }
-    public typealias Output = String
-
-    public static let name = "recallMemory"
-    public static let description = "Recalls memories matching a query and returns a JSON array of memory entries."
-    public static let isConcurrencySafe = true
-
-    public static var inputSchema: FunctionToolParam {
-        FunctionToolParam(
-            name: name,
-            description: description,
-            parameters: .object(
-                properties: [
-                    ("query", .string(description: "The recall query to search saved memories."))
-                ],
-                required: ["query"]
-            ),
-            strict: true
-        )
+@LLMTool
+public struct RecallMemory: AgentLLMTool {
+    @LLMToolArguments
+    public struct Arguments {
+        @LLMToolGuide(description: "The recall query to search saved memories.")
+        var query: String
     }
 
-    public func execute(input: Input) async throws -> String {
+    public static var isConcurrencySafe: Bool { true }
+
+    public func call(arguments: Arguments) async throws -> ToolOutput {
         let entries: [[String: Any]] = [
             [
                 "id": UUID().uuidString,
-                "content": "Previously saved finding related to '\(input.query)'.",
+                "content": "Previously saved finding related to '\(arguments.query)'.",
                 "category": "finding",
-                "tags": ["research", input.query.lowercased()],
+                "tags": ["research", arguments.query.lowercased()],
                 "timestamp": ISO8601DateFormatter().string(from: Date())
             ],
             [
                 "id": UUID().uuidString,
-                "content": "A relevant source document about '\(input.query)' was reviewed.",
+                "content": "A relevant source document about '\(arguments.query)' was reviewed.",
                 "category": "source",
-                "tags": ["source", input.query.lowercased()],
+                "tags": ["source", arguments.query.lowercased()],
                 "timestamp": ISO8601DateFormatter().string(from: Date())
             ]
         ]
         let data = try JSONSerialization.data(withJSONObject: entries, options: [.prettyPrinted, .sortedKeys])
-        return String(data: data, encoding: .utf8) ?? "[]"
+        return ToolOutput(content: String(data: data, encoding: .utf8) ?? "[]")
     }
 }
 
 /// Saves a session checkpoint and returns a session ID for later resumption.
-public struct SaveCheckpointTool: AgentToolProtocol {
-    public struct Input: Codable, Sendable {}
-    public typealias Output = String
+@LLMTool
+public struct SaveCheckpoint: AgentLLMTool {
+    @LLMToolArguments
+    public struct Arguments {}
 
-    public static let name = "saveCheckpoint"
-    public static let description = "Saves a session checkpoint and returns a session ID for later resumption."
-    public static let isConcurrencySafe = false
+    public static var isConcurrencySafe: Bool { false }
 
-    public static var inputSchema: FunctionToolParam {
-        FunctionToolParam(
-            name: name,
-            description: description,
-            parameters: .object(
-                properties: [],
-                required: []
-            ),
-            strict: true
-        )
-    }
-
-    public func execute(input: Input) async throws -> String {
-        let sessionId = UUID().uuidString
-        return "Checkpoint saved. Session ID: \(sessionId)"
+    public func call(arguments: Arguments) async throws -> ToolOutput {
+        return ToolOutput(content: "Checkpoint saved. Session ID: \(UUID().uuidString)")
     }
 }
 
 /// Generates a Markdown report from a topic and findings.
-public struct GenerateReportTool: AgentToolProtocol {
-    public struct Input: Codable, Sendable {
-        public let topic: String
-        public let findings: String
-    }
-    public typealias Output = String
-
-    public static let name = "generateReport"
-    public static let description = "Generates a Markdown report from a topic and findings."
-    public static let isConcurrencySafe = true
-
-    public static var inputSchema: FunctionToolParam {
-        FunctionToolParam(
-            name: name,
-            description: description,
-            parameters: .object(
-                properties: [
-                    ("topic", .string(description: "The research topic.")),
-                    ("findings", .string(description: "The collected findings to include in the report."))
-                ],
-                required: ["topic", "findings"]
-            ),
-            strict: true
-        )
+@LLMTool
+public struct GenerateResearchReport: AgentLLMTool {
+    @LLMToolArguments
+    public struct Arguments {
+        @LLMToolGuide(description: "The research topic.")
+        var topic: String
+        @LLMToolGuide(description: "The collected findings to include in the report.")
+        var findings: String
     }
 
-    public func execute(input: Input) async throws -> String {
-        return """
-        # Research Report: \(input.topic)
+    public static var isConcurrencySafe: Bool { true }
+
+    public func call(arguments: Arguments) async throws -> ToolOutput {
+        return ToolOutput(content: """
+        # Research Report: \(arguments.topic)
 
         ## Summary
 
-        This report presents the findings of a research investigation into \(input.topic).
+        This report presents the findings of a research investigation into \(arguments.topic).
 
         ## Findings
 
-        \(input.findings)
+        \(arguments.findings)
 
         ## Conclusion
 
-        The research on \(input.topic) has yielded the above findings. Further investigation \
+        The research on \(arguments.topic) has yielded the above findings. Further investigation \
         may be warranted to expand upon these results.
 
         ---
         *Report generated automatically by ResearchAssistant.*
-        """
+        """)
     }
 }
 
@@ -265,22 +181,16 @@ public actor ResearchAssistant {
         self.config = configuration
     }
 
-    /// Legacy convenience init for backward compatibility.
-    public init(serverURL: String, modelName: String, apiKey: String? = nil, maxRetries: Int = 3) throws {
-        let config = try AgentConfiguration(serverURL: serverURL, modelName: modelName, apiKey: apiKey, maxRetries: maxRetries)
-        try self.init(configuration: config)
-    }
-
     public func execute(goal: String) async throws -> String {
         let client = try config.buildClient()
 
         let tools = ToolRegistry()
-        tools.register(SearchWebTool())
-        tools.register(ReadDocumentTool())
-        tools.register(SaveMemoryTool())
-        tools.register(RecallMemoryTool())
-        tools.register(SaveCheckpointTool())
-        tools.register(GenerateReportTool())
+        tools.register(SearchWeb())
+        tools.register(ReadDocument())
+        tools.register(SaveMemory())
+        tools.register(RecallMemory())
+        tools.register(SaveCheckpoint())
+        tools.register(GenerateResearchReport())
 
         let systemPrompt = "You are a research assistant. Use tools to search, read documents, save findings to memory, and generate reports."
 
