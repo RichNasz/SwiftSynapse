@@ -283,7 +283,7 @@ final class DashboardModel {
         guard !configModelName.isEmpty else {
             throw AgentConfigurationError.emptyModelName
         }
-        return AgentConfiguration(
+        return try AgentConfiguration(
             serverURL: configServerURL,
             modelName: configModelName,
             apiKey: configAPIKey.isEmpty ? nil : configAPIKey
