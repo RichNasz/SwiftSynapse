@@ -125,10 +125,10 @@ public struct QueryJSON: AgentLLMTool {
     public static var isConcurrencySafe: Bool { true }
 
     public func call(arguments: Arguments) async throws -> ToolOutput {
-        guard let data = arguments.data.data(using: .utf8),
-              let root = try JSONSerialization.jsonObject(with: data) as? Any else {
+        guard let data = arguments.data.data(using: .utf8) else {
             return ToolOutput(content: "null")
         }
+        let root = try JSONSerialization.jsonObject(with: data)
         let components = arguments.path.split(separator: ".").map(String.init)
         var current: Any = root
         for component in components {
